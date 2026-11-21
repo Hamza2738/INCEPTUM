@@ -130,7 +130,7 @@ export default {
     tests: "土壌・水質診断", tests_sub: "分析結果を追加すると、すべての数値の精度が上がります。", add_test: "診断を追加", ph: "pH", ec: "土壌EC (dS/m)", n_ppm: "無機態窒素 (mg/kg)", p_ppm: "リン (mg/kg)", k_ppm: "カリウム (mg/kg)", om: "有機物 (%)",
     source: "入力元", extracted: "報告書から抽出", manual: "手入力", demo: "デモ",
     upload: "分析報告書から値を読み取る", upload_hint: "土壌診断書の写真またはPDF。保存前に確認できるよう、値を表示します。", extracting: "報告書を読み取り中…",
-    extract_unconfigured: "報告書の読み取りには、サーバー側のAnthropic APIキーが必要です。今は手入力してください。", extract_error: "この報告書を読み取れませんでした。手入力してください。",
+    extract_unconfigured: "報告書の読み取りにはサーバー側のGEMINI_API_KEYが必要です。今は手入力してください。", extract_error: "この報告書を読み取れませんでした。手入力してください。",
     extract_check: "紙の報告書と各値を照合してください。信頼度の低い値には印が付きます。", low_conf: "信頼度低", unreadable: "読み取れなかった項目", use_values: "この値を使う",
     journal: "圃場の記録", journal_sub: "いつ何をしたかを記録します。履歴とレポートに反映されます。", add_entry: "記録を追加",
     kinds: { irrigation: "灌漑", fertilization: "施肥", treatment: "防除", observation: "観察", harvest: "収穫", expense: "経費" },
@@ -173,7 +173,7 @@ export default {
   adv: {
     title: "アドバイザー", sub: "圃場について質問できます。回答は計算済みの数値に基づき、モデルが値を創作することはありません。", ph: "この圃場について質問する…", send: "送信",
     pick_plot: "圃場", suggestions: "質問の例", s1: "今日は灌漑すべきですか？", s2: "どれくらい施肥すべきですか？", s3: "この作物には水の塩分が高すぎますか？", s4: "この圃場に太陽光は採算が合いますか？",
-    unconfigured: "自由な質問への回答には、サーバー側のAnthropic APIキーが必要です。下のルールベースの助言は常に利用できます。", rules: "ルールベースの助言（常に利用可能）", thinking: "考え中…", grounded: "圃場のデータに基づく",
+    unconfigured: "自由な質問への回答にはサーバー側のGEMINI_API_KEYが必要です。下のルールベースの助言は常に利用できます。", rules: "ルールベースの助言（常に利用可能）", thinking: "考え中…", grounded: "圃場のデータに基づく",
   },
 
   advice: {

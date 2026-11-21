@@ -80,13 +80,66 @@ cd frontend && npm run check:i18n             # every key used exists in en; fr/
 | Variable | Meaning |
 |---|---|
 | `SECRET_KEY` | JWT signing key. Set a long random value in production. |
-| `ANTHROPIC_API_KEY` | Needed for: advisor chat, plant scanner, lab-report extraction. Without it the rule-based advice still works and those three features say clearly that they are not configured. |
-| `ANTHROPIC_MODEL` | Default `claude-sonnet-5-5`. |
+| `GEMINI_API_KEY` | Needed for: advisor chat and rewriting, plant scanner, and lab-report extraction. Without it, rule-based advisor advice still works and Gemini-powered features display a clear unconfigured or demo state. |
+| `GEMINI_MODEL` | Gemini model used for text and image analysis. Default `gemini-2.5-flash`. |
 | `OFFLINE_MODE` | `1` = never call Open-Meteo; use `data/weather_cache` or a synthetic climatology, labelled as such in the UI. Use this for a demo with unreliable wifi. |
 | `SCANNER_DEMO` | `1` = without an API key, the scanner returns a fixed example result with a visible "DEMO RESULT" banner. Never presented as an analysis of the photo. |
 | `SEED_DEMO` | `1` creates the two demo accounts and their plots. Set `0` in production. |
 | `DATABASE_URL` | Default SQLite in `backend/instance/`. Any SQLAlchemy URL works. |
 | `CORS_ORIGINS` | Comma-separated origins allowed in development. |
+
+---
+
+## Reliability of values: can they be guaranteed?
+
+No. No automatic source can guarantee the exact condition of a real plot. SalinityShield separates values into three levels:
+
+| Level | Examples | Reliability rule | User-facing label |
+|---|---|---|---|
+| Measured | Soil/lab EC, pH, N/P/K, water EC, irrigation volume, pump depth entered by or provided by the farmer | Relies on the measurement method and instrument; no external API can certify it | `Measured` / replace with real measurement |
+| Observed | Open-Meteo/JMA weather, Sentinel vegetation, FAO WaPOR evapotranspiration, crop/area boundaries from official parcel sources | Strong for the source itself, but may have grid resolution or retrieval delays | `Observed data` with source and timestamp |
+| Estimated/modelled | SoilGrids texture, synthetic weather fallback, crop coefficients, irrigation needs, salinity impact, fertilizer recommendation | A numerical estimate, not a guarantee | `Estimate` or `Model estimate` |
+
+The application must use an explicit source, timestamp and confidence indicator whenever a value is shown. Before automatic values are treated as farm-ready, validate them against:
+
+1. A soil laboratory test.
+2. An EC meter or accredited water analysis for the actual water source.
+3. A calibrated weather station or field observation.
+4. The grower's sowing date, crop variety, irrigation method and recent operations.
+5. Official parcel boundaries and crop declarations.
+
+Gemini image and text conclusions are **hypotheses**, never diagnoses or guaranteed agronomic prescriptions. Gemini must not add numbers that are absent from the deterministic model output.
+
+### Real-data integration links
+
+- Open-Meteo forecasts and weather data: https://open-meteo.com/en/docs
+- Open-Meteo historical archive: https://open-meteo.com/en/docs/historical-weather-api
+- NASA POWER agroclimatology: https://power.larc.nasa.gov/docs/services/api/
+- ERA5-Land: https://cds.climate.copernicus.eu/datasets/reanalysis-era5-land
+- Japan Meteorological Agency AMeDAS: https://www.jma.go.jp/jma/en/Activities/amedas/amedas.html
+- JMA developer data: https://www.data.jma.go.jp/developer/index.html
+- ISRIC SoilGrids: https://rest.isric.org/soilgrids/v2.0/docs
+- Harmonized World Soil Database: https://www.fao.org/soils-portal/data-hub/soil-maps-and-databases/harmonized-world-soil-database-v20/fr/
+- FAO WaPOR: https://www.fao.org/in-action/remote-sensing-for-water-productivity/wapor-data/
+- FAO WaPOR data access: https://www.fao.org/in-action/remote-sensing-for-water-productivity/wapor-data-access/en
+- ESA WorldCover: https://worldcover2021.esa.int/
+- Copernicus Data Space: https://documentation.dataspace.copernicus.eu/
+- Copernicus Sentinel Hub/openEO: https://documentation.dataspace.copernicus.eu/APIs/SentinelHub/OpenEO.html
+- Google Earth Engine Sentinel catalog: https://developers.google.com/earth-engine/datasets/tags/sentinel
+- Google Earth Engine Landsat catalog: https://developers.google.com/earth-engine/datasets/tags/landsat
+- NASA SMAP: https://smap.jpl.nasa.gov/
+- Tunisia open agricultural data: https://catalog.agridata.tn/
+- Tunisia national open data: https://data.gov.tn/
+- Tunisia national statistics: https://www.ins.tn/
+- FAO AQUASTAT Tunisia: https://www.fao.org/aquastat/fr/countries-and-basins/country-profiles/country/TUN/index.html
+- Japan MAFF statistics: https://www.maff.go.jp/j/tokei/index.html
+- Japan MAFF MIDORI Strategy: https://www.maff.go.jp/j/kanbo/kankyo/seisaku/midori/index.html
+- Japan WAGRI farmland and soil API: https://wagri.naro.go.jp/wagri_api/fieldinfo-localgovernmentcd/
+- Japan MLIT groundwater survey: https://nlftp.mlit.go.jp/kokjo/inspect/landclassification/water/f9_exp.html
+- OpenStreetMap/Nominatim: https://nominatim.org/release-docs/latest/api/Overview/
+- Gemini API image understanding: https://ai.google.dev/gemini-api/docs/image-understanding
+
+For exact plot boundaries, crop declarations and registered land records, use an official cadastral or agricultural registry integration; no public satellite or weather API can replace them.
 
 ---
 

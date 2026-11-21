@@ -130,7 +130,7 @@ export default {
     tests: "Soil and water tests", tests_sub: "Add lab results to make every number more precise.", add_test: "Add a test", ph: "pH", ec: "Soil EC (dS/m)", n_ppm: "Mineral N (mg/kg)", p_ppm: "P (mg/kg)", k_ppm: "K (mg/kg)", om: "Organic matter (%)",
     source: "Source", extracted: "extracted from report", manual: "manual", demo: "demo",
     upload: "Read values from a lab report", upload_hint: "Photo or PDF of a soil report. Values are shown for you to check before saving.", extracting: "Reading the report…",
-    extract_unconfigured: "Report reading needs an Anthropic API key on the server. Enter the values by hand for now.", extract_error: "Could not read this report. Enter the values by hand.",
+    extract_unconfigured: "Report reading needs GEMINI_API_KEY on the server. Enter the values by hand for now.", extract_error: "Could not read this report. Enter the values by hand.",
     extract_check: "Check every value against the paper. Low-confidence values are marked.", low_conf: "low confidence", unreadable: "Unreadable fields", use_values: "Use these values",
     journal: "Field journal", journal_sub: "What you did and when. It feeds your history and the report.", add_entry: "Add entry",
     kinds: { irrigation: "Irrigation", fertilization: "Fertilization", treatment: "Treatment", observation: "Observation", harvest: "Harvest", expense: "Expense" },
@@ -173,7 +173,7 @@ export default {
   adv: {
     title: "Advisor", sub: "Ask about your plot. Answers are grounded on the computed numbers, and the model may not invent values.", ph: "Ask a question about this plot…", send: "Send",
     pick_plot: "Plot", suggestions: "Try asking", s1: "Should I irrigate today?", s2: "How much fertilizer should I apply?", s3: "Is my water too salty for this crop?", s4: "Is solar worth it for this plot?",
-    unconfigured: "Free-text answers need an Anthropic API key on the server. The deterministic advice below always works.", rules: "Rule-based advice (always available)", thinking: "Thinking…", grounded: "Based on your plot data",
+    unconfigured: "Free-text answers need GEMINI_API_KEY on the server. The deterministic advice below always works.", rules: "Rule-based advice (always available)", thinking: "Thinking…", grounded: "Based on your plot data",
   },
 
   advice: {

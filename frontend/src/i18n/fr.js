@@ -129,7 +129,7 @@ export default {
     tests: "Analyses de sol et d'eau", tests_sub: "Ajoutez des résultats de laboratoire pour affiner chaque chiffre.", add_test: "Ajouter une analyse", ph: "pH", ec: "CE du sol (dS/m)", n_ppm: "N minéral (mg/kg)", p_ppm: "P (mg/kg)", k_ppm: "K (mg/kg)", om: "Matière organique (%)",
     source: "Source", extracted: "extrait d'un rapport", manual: "manuel", demo: "démo",
     upload: "Lire les valeurs d'un rapport de laboratoire", upload_hint: "Photo ou PDF d'un rapport de sol. Les valeurs s'affichent pour vérification avant enregistrement.", extracting: "Lecture du rapport…",
-    extract_unconfigured: "La lecture de rapport nécessite une clé API Anthropic sur le serveur. Saisissez les valeurs à la main pour l'instant.", extract_error: "Impossible de lire ce rapport. Saisissez les valeurs à la main.",
+    extract_unconfigured: "La lecture de rapport nécessite GEMINI_API_KEY sur le serveur. Saisissez les valeurs à la main pour l'instant.", extract_error: "Impossible de lire ce rapport. Saisissez les valeurs à la main.",
     extract_check: "Vérifiez chaque valeur sur le papier. Les valeurs peu fiables sont signalées.", low_conf: "faible confiance", unreadable: "Champs illisibles", use_values: "Utiliser ces valeurs",
     journal: "Journal de parcelle", journal_sub: "Ce que vous avez fait et quand. Il alimente votre historique et le rapport.", add_entry: "Ajouter une entrée",
     kinds: { irrigation: "Irrigation", fertilization: "Fertilisation", treatment: "Traitement", observation: "Observation", harvest: "Récolte", expense: "Dépense" },
@@ -172,7 +172,7 @@ export default {
   adv: {
     title: "Conseiller", sub: "Posez vos questions sur votre parcelle. Les réponses s'appuient sur les chiffres calculés, et le modèle ne peut pas inventer de valeurs.", ph: "Posez une question sur cette parcelle…", send: "Envoyer",
     pick_plot: "Parcelle", suggestions: "Essayez de demander", s1: "Dois-je irriguer aujourd'hui ?", s2: "Combien d'engrais dois-je apporter ?", s3: "Mon eau est-elle trop salée pour cette culture ?", s4: "Le solaire est-il rentable pour cette parcelle ?",
-    unconfigured: "Les réponses libres nécessitent une clé API Anthropic sur le serveur. Les conseils déterministes ci-dessous fonctionnent toujours.", rules: "Conseils par règles (toujours disponibles)", thinking: "Réflexion…", grounded: "Basé sur les données de votre parcelle",
+    unconfigured: "Les réponses libres nécessitent GEMINI_API_KEY sur le serveur. Les conseils déterministes ci-dessous fonctionnent toujours.", rules: "Conseils par règles (toujours disponibles)", thinking: "Réflexion…", grounded: "Basé sur les données de votre parcelle",
   },
 
   advice: {

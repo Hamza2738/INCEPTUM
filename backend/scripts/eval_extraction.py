@@ -1,6 +1,6 @@
 """Measure how well the lab-report extractor reads real reports.
 
-Usage (from the backend folder, with ANTHROPIC_API_KEY set in .env):
+Usage (from the backend folder, with GEMINI_API_KEY set in .env):
     python scripts/eval_extraction.py
 
 Put report photos or PDFs in data/lab_samples/ and describe the true values in
@@ -47,7 +47,7 @@ def main():
     expected = json.loads(exp_file.read_text(encoding="utf-8"))
     with app.app_context():
         if not llm.available():
-            print("No ANTHROPIC_API_KEY configured: cannot run the extractor.")
+            print("No GEMINI_API_KEY configured: cannot run the extractor.")
             return 1
         total = correct = unreadable_ok = 0
         per_field = {}

@@ -10,8 +10,6 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     DATA_DIR = Path(os.getenv("DATA_DIR", BASE / "data"))
     JWT_HOURS = int(os.getenv("JWT_HOURS", "72"))
-    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-    ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5-5")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
     GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     OFFLINE_MODE = os.getenv("OFFLINE_MODE", "0") == "1"        # never call Open-Meteo, use cache or climatology

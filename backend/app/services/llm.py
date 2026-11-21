@@ -1,8 +1,8 @@
-"""Claude API wrappers: advisor rewrite, grounded chat, plant scanner, lab-report extraction.
+"""Gemini API wrappers: advisor rewrite, grounded chat, plant scanner, lab-report extraction.
 
-Principle (course doc, section 3): calculation before writing. Every number sent to the model comes
-from the deterministic engine, and the model is instructed to use only those numbers.
-Everything here degrades gracefully when ANTHROPIC_API_KEY is missing or the call fails.
+Principle: calculation before writing. Every number sent to the model comes from the deterministic
+engine, and the model is instructed to use only those numbers. Everything degrades gracefully when
+GEMINI_API_KEY is missing or the Gemini request fails.
 """
 import base64
 import json
@@ -14,7 +14,7 @@ RELAY = {"TN": "a CRDA adviser or an agricultural technician", "JP": "the local 
 
 
 def available():
-    return bool(current_app.config["ANTHROPIC_API_KEY"])
+    return gemini_available()
 
 
 def gemini_available():
@@ -59,13 +59,27 @@ def scan_image_gemini(region, lang, image_bytes, mime, context=None):
     return out
 
 
-def _client():
-    import anthropic
-    return anthropic.Anthropic(api_key=current_app.config["ANTHROPIC_API_KEY"])
+def _gemini_generate(system, text, image_bytes=None, mime=None, max_output_tokens=900, temperature=0.2, json_output=True):
+    """Send grounded text and optional image data to Gemini and return response text."""
+    import requests
 
-
-def _text(resp):
-    return "".join(b.text for b in resp.content if getattr(b, "type", "") == "text").strip()
+    api_key = current_app.config["GEMINI_API_KEY"]
+    model = current_app.config.get("GEMINI_MODEL", "gemini-2.5-flash")
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    parts = [{"text": text}]
+    if image_bytes is not None:
+        parts.append({"inlineData": {"mimeType": mime or "image/jpeg", "data": base64.standard_b64encode(image_bytes).decode("ascii")}})
+    payload = {
+        "systemInstruction": {"parts": [{"text": system}]},
+        "contents": [{"role": "user", "parts": parts}],
+        "generationConfig": {"temperature": temperature, "maxOutputTokens": max_output_tokens, **({"responseMimeType": "application/json"} if json_output else {})},
+    }
+    response = requests.post(url, params={"key": api_key}, json=payload, timeout=45)
+    response.raise_for_status()
+    candidates = response.json().get("candidates", [])
+    if not candidates:
+        raise ValueError("Gemini returned no candidates")
+    return "".join(part.get("text", "") for part in candidates[0].get("content", {}).get("parts", [])).strip()
 
 
 def parse_json(text):
@@ -114,8 +128,8 @@ def rewrite_advice(region, lang, a):
         prompt = ("Indicators:\n" + json.dumps(grounding(a), ensure_ascii=False) + "\n\nAdvice items selected by the rules engine:\n" + json.dumps(a["advice"], ensure_ascii=False) +
                   "\n\nFor each item write ONE or two sentences: the action, then the quantified reason using only numbers from the data or the item params. "
                   'Reply ONLY with a JSON array like [{"code": "...", "text": "..."}] in the same order.')
-        r = _client().messages.create(model=current_app.config["ANTHROPIC_MODEL"], max_tokens=900, system=_system(region, lang), messages=[{"role": "user", "content": prompt}])
-        arr = parse_json(_text(r))
+        text = _gemini_generate(_system(region, lang), prompt, max_output_tokens=900)
+        arr = parse_json(text)
         return {x["code"]: x["text"] for x in arr} if isinstance(arr, list) else None
     except Exception as exc:
         current_app.logger.warning("advice rewrite failed: %s", exc)
@@ -127,12 +141,9 @@ def chat(region, lang, a, question, history=None):
     if not available():
         return None
     try:
-        msgs = [{"role": h["role"], "content": h["content"]} for h in (history or [])[-6:] if h.get("role") in ("user", "assistant")]
-        msgs.append({"role": "user", "content": "Indicators (JSON):\n" + json.dumps(grounding(a), ensure_ascii=False) + "\n\nQuestion: " + question})
-        r = _client().messages.create(model=current_app.config["ANTHROPIC_MODEL"], max_tokens=700,
-                                      system=_system(region, lang, "Answer in at most 120 words with one clear next action. If the question needs data that is not in the JSON, say what is missing and ask for it."),
-                                      messages=msgs)
-        return _text(r)
+        transcript = "\n".join(f"{h['role']}: {h['content']}" for h in (history or [])[-6:] if h.get("role") in ("user", "assistant") and h.get("content"))
+        prompt = ("Indicators (JSON):\n" + json.dumps(grounding(a), ensure_ascii=False) + "\n\n" + (transcript + "\n" if transcript else "") + "user: " + question)
+        return _gemini_generate(_system(region, lang, "Answer in at most 120 words with one clear next action. If the question needs data that is not in the JSON, say what is missing and ask for it."), prompt, max_output_tokens=700, json_output=False)
     except Exception as exc:
         current_app.logger.warning("chat failed: %s", exc)
         return None
@@ -150,20 +161,8 @@ SCAN_SCHEMA = ('{"culture_detectee": "string", "qualite_image": "bonne|moyenne|m
 
 
 def scan_image(region, lang, image_bytes, mime, crop_name, context):
-    """Plant scanner (course section 5). Returns the parsed JSON dict or raises."""
-    system = (f"You analyse plant photos for farmers in {'Tunisia' if region == 'TN' else 'Japan'}. You help diagnose, you never give a definitive diagnosis. Output language of the text fields: {LANG_NAMES.get(lang, 'English')}. "
-              "List at most 3 hypotheses ranked by probability, cap each confidence at 0.85, and consider salinity burn and nutrient deficiency as well as disease and pests. "
-              "If a viral disease or a regulated organism is suspected, advise isolating the plants and contacting the regional agricultural service. "
-              "Do not give pesticide products or doses: suggest cultural practices, biological control families, or consultation. If the image is not a plant, return hypotheses: [] and consulter_expert: false. "
-              f"Reply ONLY with JSON following this schema: {SCAN_SCHEMA}")
-    user = [_media_block(image_bytes, mime), {"type": "text", "text": f"Crop declared by the farmer: {crop_name or 'unknown'}. Context: {json.dumps(context, ensure_ascii=False)}"}]
-    r = _client().messages.create(model=current_app.config["ANTHROPIC_MODEL"], max_tokens=1200, system=system, messages=[{"role": "user", "content": user}])
-    out = parse_json(_text(r))
-    if not isinstance(out, dict):
-        raise ValueError("model reply was not valid JSON")
-    for h in out.get("hypotheses", []):
-        h["confiance"] = min(float(h.get("confiance", 0)), 0.85)
-    return out
+    """Compatibility wrapper that routes the plant scanner through Gemini."""
+    return scan_image_gemini(region, lang, image_bytes, mime, context)
 
 
 LAB_SCHEMA = ('{"type": "soil|water", "date": "YYYY-MM-DD or null", "lab": "string or null", "values": {"ph": {"v": null, "conf": 0.0}, "ec": {"v": null, "unit": "dS/m", "conf": 0.0}, '
@@ -174,9 +173,8 @@ def extract_lab(image_bytes, mime):
     system = ("You extract values from a soil or irrigation-water laboratory report (French, Arabic, Japanese or English). Extract ONLY values that are printed in the document, never infer or estimate. "
               "Convert EC to dS/m (1 mS/cm = 1 dS/m, 1 uS/cm = 0.001 dS/m, 1 mS/m = 0.01 dS/m). Convert nitrogen to mg/kg (ppm) of mineral N when the unit allows it, else leave null. Organic matter in %. "
               "Give a confidence between 0 and 1 for each value and list fields that are unreadable. Reply ONLY with JSON following this schema: " + LAB_SCHEMA)
-    r = _client().messages.create(model=current_app.config["ANTHROPIC_MODEL"], max_tokens=900, system=system,
-                                  messages=[{"role": "user", "content": [_media_block(image_bytes, mime), {"type": "text", "text": "Extract the values."}]}])
-    out = parse_json(_text(r))
+    text = _gemini_generate(system, "Extract the values.", image_bytes=image_bytes, mime=mime, max_output_tokens=900)
+    out = parse_json(text)
     if not isinstance(out, dict):
-        raise ValueError("model reply was not valid JSON")
+        raise ValueError("Gemini reply was not valid JSON")
     return out

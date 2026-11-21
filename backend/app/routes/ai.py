@@ -76,12 +76,6 @@ def scan():
         except Exception as exc:
             current_app.logger.warning("Gemini scan failed: %s", exc)
             return jsonify(ok=True, mode="error", quality=quality, message="model_error")
-    elif llm.available():
-        try:
-            result, mode = llm.scan_image(g.user.region, lang, clean, "image/jpeg", crop["name"]["en"] if crop else None, context), "model"
-        except Exception as exc:
-            current_app.logger.warning("scan failed: %s", exc)
-            return jsonify(ok=True, mode="error", quality=quality, message="model_error")
     elif current_app.config["SCANNER_DEMO"]:
         result, mode = scanner.DEMO_RESULT, "demo"
     rec = None
@@ -117,7 +111,7 @@ def extract_lab():
     if not f or (f.mimetype not in ALLOWED and f.mimetype != "application/pdf"):
         return jsonify(error="invalid_file"), 400
     raw = f.read()
-    if not llm.available():
+    if not llm.gemini_available():
         return jsonify(ok=True, mode="unconfigured", result=None)
     try:
         if f.mimetype != "application/pdf":

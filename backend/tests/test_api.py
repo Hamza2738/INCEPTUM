@@ -11,7 +11,7 @@ from app import create_app
 @pytest.fixture(scope="module")
 def client(tmp_path_factory):
     db = tmp_path_factory.mktemp("db") / "t.db"
-    app = create_app({"SQLALCHEMY_DATABASE_URI": f"sqlite:///{db}", "OFFLINE_MODE": True, "TESTING": True, "ANTHROPIC_API_KEY": "", "SEED_DEMO": True})
+    app = create_app({"SQLALCHEMY_DATABASE_URI": f"sqlite:///{db}", "OFFLINE_MODE": True, "TESTING": True, "GEMINI_API_KEY": "", "SEED_DEMO": True})
     return app.test_client()
 
 
