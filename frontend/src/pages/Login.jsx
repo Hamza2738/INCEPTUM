@@ -70,21 +70,26 @@ function Side({ code, onSwitch, panelLang, setPanelLang }) {
         </div>
       </div>
 
-      <div className="inner">
-        <div>
-          <div className="native">{L(`${pre}_native`)}</div>
-          <h1>{L(`${pre}_name`)}</h1>
+      <div className="inner split-inner">
+        <div className="auth-column">
+          <AuthCard code={code} panelLang={panelLang} onBack={onSwitch} />
         </div>
-        <p style={{ fontSize: 17, opacity: .95, margin: 0 }}>{L(`${pre}_head`)}</p>
 
-        <div className="problems">
-          {[1, 2, 3].map((i) => {
-            const Ico = icons[i - 1];
-            return <div className="problem" key={i}><Ico size={20} aria-hidden /><div><b>{L(`${pre}_p${i}_t`)}</b>{L(`${pre}_p${i}`)}</div></div>;
-          })}
-        </div>
-        <div className="figures">{figs.map((f, i) => <div key={f}><b className="num">{figVals[i]}</b><span>{L(f)}</span></div>)}</div>
-        <AuthCard code={code} panelLang={panelLang} onBack={onSwitch} />
+        <section className="country-info" aria-label={L(`${pre}_name`)}>
+          <div>
+            <div className="native">{L(`${pre}_native`)}</div>
+            <h1>{L(`${pre}_name`)}</h1>
+          </div>
+          <p style={{ fontSize: 17, opacity: .95, margin: 0 }}>{L(`${pre}_head`)}</p>
+
+          <div className="problems">
+            {[1, 2, 3].map((i) => {
+              const Ico = icons[i - 1];
+              return <div className="problem" key={i}><Ico size={20} aria-hidden /><div><b>{L(`${pre}_p${i}_t`)}</b>{L(`${pre}_p${i}`)}</div></div>;
+            })}
+          </div>
+          <div className="figures">{figs.map((f, i) => <div key={f}><b className="num">{figVals[i]}</b><span>{L(f)}</span></div>)}</div>
+        </section>
       </div>
 
       <div className="tiny" style={{ position: "relative", zIndex: 2, opacity: .85 }}>{L("footer")}</div>
