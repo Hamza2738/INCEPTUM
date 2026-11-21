@@ -160,8 +160,9 @@ export default {
   scan: {
     title: "Plant scanner", sub: "Upload a leaf or plant photo. The AI suggests possible causes with confidence, never a diagnosis.",
     upload: "Choose or drop a photo", hint: "JPG, PNG or WebP. GPS data is removed before analysis.", crop: "Crop (helps accuracy)", plot: "Plot (adds weather and water context)", analyze: "Analyze",
+    upload_mode: "Upload photo", live_mode: "Real-time scan", live_hint: "Point the camera at the plant, then start the live scan", live_video: "Live plant camera", start_live: "Start live scan", scan_now: "Scan now", stop_live: "Stop camera", camera_unavailable: "Camera access is not available in this browser.", camera_denied: "Camera access was denied or could not be started.",
     analyzing: "Analyzing…", quality_bad: "The photo is not good enough:", q_blurry: "too blurry", q_too_dark: "too dark", q_too_bright: "too bright", q_no_plant: "no plant visible",
-    unconfigured: "The scanner needs an Anthropic API key on the server. Add ANTHROPIC_API_KEY to backend/.env, then restart.", demo: "DEMO RESULT: this is a fixed example, not an analysis of your photo.",
+    unconfigured: "The Gemini scanner needs GEMINI_API_KEY on the server. Add it to backend/.env, then restart.", demo: "DEMO RESULT: this is a fixed example, not an analysis of your photo.",
     error: "The analysis failed. Try again.", hyp: "Possible causes", conf: "confidence", seen: "Signs observed", check: "How to verify", severity: "Severity", sev: { faible: "low", moyenne: "medium", elevee: "high", low: "low", medium: "medium", high: "high" },
     prudent: "Prudent next steps", consult: "Ask a local agronomist to confirm.", disclaimer: "AI suggestions are hypotheses, not a diagnosis. No pesticide doses are given. Confidence is capped at 85%.",
     confirm: "Confirm what it really was", confirm_ph: "e.g. salt burn", confirmed: "Saved. Your feedback improves future evaluation.", history: "Recent scans",

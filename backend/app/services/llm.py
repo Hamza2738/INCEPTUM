@@ -17,6 +17,48 @@ def available():
     return bool(current_app.config["ANTHROPIC_API_KEY"])
 
 
+def gemini_available():
+    return bool(current_app.config.get("GEMINI_API_KEY", ""))
+
+
+def scan_image_gemini(region, lang, image_bytes, mime, context=None):
+    """Analyse a plant image with Gemini without any plot or crop context."""
+    import requests
+
+    api_key = current_app.config["GEMINI_API_KEY"]
+    model = current_app.config.get("GEMINI_MODEL", "gemini-2.5-flash")
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    system = (f"You analyse plant photos for farmers in {'Tunisia' if region == 'TN' else 'Japan'}. "
+              "Give possible causes only, never a definitive diagnosis. "
+              f"Write all text fields in {LANG_NAMES.get(lang, 'English')}. "
+              "Return at most 3 hypotheses ranked by probability, cap confidence at 0.85, "
+              "and consider salinity, nutrient deficiency, disease, stress and pests. "
+              "Do not give pesticide products or doses. If the image is not a plant, return hypotheses: [] and consulter_expert: false. "
+              f"Reply ONLY with valid JSON following this schema: {SCAN_SCHEMA}")
+    payload = {
+        "systemInstruction": {"parts": [{"text": system}]},
+        "contents": [{"parts": [
+            {"text": "Analyse this plant image. Context: " + json.dumps(context or {}, ensure_ascii=False)},
+            {"inlineData": {"mimeType": mime, "data": base64.standard_b64encode(image_bytes).decode("ascii")}},
+        ]}],
+        "generationConfig": {"temperature": 0.2, "responseMimeType": "application/json"},
+    }
+    response = requests.post(url, params={"key": api_key}, json=payload, timeout=45)
+    response.raise_for_status()
+    candidates = response.json().get("candidates", [])
+    if not candidates:
+        raise ValueError("Gemini returned no candidates")
+    text = "".join(part.get("text", "") for part in candidates[0].get("content", {}).get("parts", []))
+    out = parse_json(text)
+    if not isinstance(out, dict):
+        raise ValueError("Gemini reply was not valid JSON")
+    out.setdefault("qualite_image", "bonne")
+    out.setdefault("culture_detectee", "unknown")
+    for h in out.get("hypotheses", []):
+        h["confiance"] = min(max(float(h.get("confiance", 0)), 0), 0.85)
+    return out
+
+
 def _client():
     import anthropic
     return anthropic.Anthropic(api_key=current_app.config["ANTHROPIC_API_KEY"])

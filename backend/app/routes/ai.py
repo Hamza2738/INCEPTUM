@@ -20,7 +20,7 @@ def _lang(b):
 @bp.get("/status")
 @login_required
 def status():
-    return jsonify(llm=llm.available(), scanner_demo=current_app.config["SCANNER_DEMO"], offline=current_app.config["OFFLINE_MODE"])
+    return jsonify(llm=llm.available(), gemini=llm.gemini_available(), scanner_demo=current_app.config["SCANNER_DEMO"], offline=current_app.config["OFFLINE_MODE"])
 
 
 @bp.post("/advice")
@@ -70,7 +70,13 @@ def scan():
         a = analysis.analyze(own_plot(plot_id), g.user, light=True)
         context["recent_weather"] = {"rain_next3_mm": a["water"]["summary"]["rain_next3_mm"], "fungal_level": a["risks"]["fungal_level"], "water_ec": a["salinity"]["ecw"]}
     mode, result = "unconfigured", None
-    if llm.available():
+    if llm.gemini_available():
+        try:
+            result, mode = llm.scan_image_gemini(g.user.region, lang, clean, "image/jpeg", context), "gemini"
+        except Exception as exc:
+            current_app.logger.warning("Gemini scan failed: %s", exc)
+            return jsonify(ok=True, mode="error", quality=quality, message="model_error")
+    elif llm.available():
         try:
             result, mode = llm.scan_image(g.user.region, lang, clean, "image/jpeg", crop["name"]["en"] if crop else None, context), "model"
         except Exception as exc:

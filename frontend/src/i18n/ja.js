@@ -159,8 +159,9 @@ export default {
   scan: {
     title: "作物スキャナー", sub: "葉や作物の写真をアップロードしてください。AIは確信度つきで考えられる原因を提案しますが、診断は行いません。",
     upload: "写真を選択またはドロップ", hint: "JPG、PNG、WebP。GPS情報は解析前に削除されます。", crop: "作物（精度が上がります）", plot: "圃場（気象と水の情報を追加）", analyze: "解析",
+    upload_mode: "写真をアップロード", live_mode: "リアルタイムスキャン", live_hint: "カメラを植物に向けてライブスキャンを開始してください", live_video: "植物ライブカメラ", start_live: "ライブスキャン開始", scan_now: "今すぐスキャン", stop_live: "カメラ停止", camera_unavailable: "このブラウザではカメラを利用できません。", camera_denied: "カメラへのアクセスが拒否されたか、開始できませんでした。",
     analyzing: "解析中…", quality_bad: "写真の品質が十分ではありません：", q_blurry: "ぼやけている", q_too_dark: "暗すぎる", q_too_bright: "明るすぎる", q_no_plant: "植物が写っていない",
-    unconfigured: "スキャナーにはサーバー側のAnthropic APIキーが必要です。backend/.envにANTHROPIC_API_KEYを追加して再起動してください。", demo: "デモ結果：固定の例であり、お客様の写真の解析ではありません。",
+    unconfigured: "Geminiスキャナーにはサーバー側のGEMINI_API_KEYが必要です。backend/.envに追加して再起動してください。", demo: "デモ結果：固定の例であり、お客様の写真の解析ではありません。",
     error: "解析に失敗しました。もう一度お試しください。", hyp: "考えられる原因", conf: "確信度", seen: "観察された兆候", check: "確認方法", severity: "重症度", sev: { faible: "低", moyenne: "中", elevee: "高", low: "低", medium: "中", high: "高" },
     prudent: "慎重な次の一手", consult: "地域の普及指導員・農学の専門家に確認してください。", disclaimer: "AIの提案は仮説であり、診断ではありません。農薬の使用量は示しません。確信度は最大85%に制限されます。",
     confirm: "実際の原因を記録する", confirm_ph: "例：塩害", confirmed: "保存しました。今後の評価の改善に役立ちます。", history: "最近のスキャン",

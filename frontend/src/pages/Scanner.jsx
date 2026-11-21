@@ -1,19 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Camera, ScanLine } from "lucide-react";
+import { Camera, ScanLine, SwitchCamera } from "lucide-react";
 import { api } from "../api";
-import { useAuth } from "../auth";
 import { useI18n } from "../i18n";
-import { dateLong, num, pick } from "../lib/format";
-import { Button, Card, ErrorNote, Field, Notice, Pill } from "../components/ui";
+import { dateLong, num } from "../lib/format";
+import { Button, Card, ErrorNote, Notice, Pill } from "../components/ui";
 
 export default function Scanner() {
-  const { region } = useAuth();
   const { t, lang } = useI18n();
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
-  const [crop, setCrop] = useState("");
-  const [plotId, setPlotId] = useState("");
-  const [plots, setPlots] = useState([]);
+  const [mode, setMode] = useState("upload");
+  const [live, setLive] = useState(false);
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState(null);
   const [error, setError] = useState(null);
@@ -21,20 +18,67 @@ export default function Scanner() {
   const [saved, setSaved] = useState(false);
   const [history, setHistory] = useState([]);
   const input = useRef();
+  const video = useRef();
+  const canvas = useRef();
+  const streamRef = useRef(null);
+  const liveTimer = useRef(null);
 
   const loadHistory = () => api.get("/ai/scans").then((r) => setHistory(r.scans)).catch(() => {});
-  useEffect(() => { api.get("/plots").then((r) => setPlots(r.plots)).catch(() => {}); loadHistory(); }, []);
+  useEffect(() => { loadHistory(); }, []);
   useEffect(() => () => preview && URL.revokeObjectURL(preview), [preview]);
+  useEffect(() => () => stopCamera(), []);
 
   const choose = (f) => { if (!f) return; setFile(f); setPreview(URL.createObjectURL(f)); setRes(null); setSaved(false); setLabel(""); };
 
-  const analyze = async () => {
+  const analyzeFile = async (imageFile) => {
     setBusy(true); setError(null); setRes(null); setSaved(false);
     const fd = new FormData();
-    fd.append("file", file); fd.append("lang", lang);
-    if (crop) fd.append("crop_id", crop);
-    if (plotId) fd.append("plot_id", plotId);
+    fd.append("file", imageFile);
+    fd.append("lang", lang);
     try { setRes(await api.upload("/ai/scan", fd)); loadHistory(); } catch (e) { setError(e); } finally { setBusy(false); }
+  };
+
+  const analyze = async () => { if (file) await analyzeFile(file); };
+
+  const stopCamera = () => {
+    if (liveTimer.current) clearInterval(liveTimer.current);
+    liveTimer.current = null;
+    if (streamRef.current) streamRef.current.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    setLive(false);
+  };
+
+  const captureAndAnalyze = async () => {
+    if (!video.current || !canvas.current || busy) return;
+    const width = video.current.videoWidth;
+    const height = video.current.videoHeight;
+    if (!width || !height) return;
+    canvas.current.width = width;
+    canvas.current.height = height;
+    canvas.current.getContext("2d").drawImage(video.current, 0, 0, width, height);
+    const blob = await new Promise((resolve) => canvas.current.toBlob(resolve, "image/jpeg", 0.9));
+    if (blob) await analyzeFile(new File([blob], "live-scan.jpg", { type: "image/jpeg" }));
+  };
+
+  const startCamera = async () => {
+    setError(null);
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError({ message: t("scan.camera_unavailable") });
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
+      streamRef.current = stream;
+      if (video.current) {
+        video.current.srcObject = stream;
+        await video.current.play();
+      }
+      setLive(true);
+      await captureAndAnalyze();
+      liveTimer.current = setInterval(captureAndAnalyze, 6000);
+    } catch (e) {
+      setError({ message: t("scan.camera_denied") });
+    }
   };
   const confirm = async () => { await api.post(`/ai/scan/${res.scan_id}/confirm`, { label }); setSaved(true); loadHistory(); };
 
@@ -46,15 +90,40 @@ export default function Scanner() {
       <div className="page-head"><div><h1>{t("scan.title")}</h1><p>{t("scan.sub")}</p></div></div>
       <div className="grid cols-2" style={{ alignItems: "start" }}>
         <Card>
-          <div className="drop" onClick={() => input.current.click()} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); choose(e.dataTransfer.files[0]); }} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && input.current.click()}>
-            {preview ? <img src={preview} alt="" /> : <><Camera size={30} aria-hidden /><div><b>{t("scan.upload")}</b></div><div className="tiny">{t("scan.hint")}</div></>}
-            <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" hidden onChange={(e) => choose(e.target.files[0])} />
+          <div className="tabs" style={{ marginBottom: 14 }}>
+            <button type="button" className={`tab ${mode === "upload" ? "active" : ""}`} onClick={() => { stopCamera(); setMode("upload"); }}><Camera size={16} />{t("scan.upload_mode")}</button>
+            <button type="button" className={`tab ${mode === "live" ? "active" : ""}`} onClick={() => setMode("live")}><SwitchCamera size={16} />{t("scan.live_mode")}</button>
           </div>
-          <div className="stack" style={{ marginTop: 14 }}>
-            <Field label={t("scan.crop")}><select className="input" value={crop} onChange={(e) => setCrop(e.target.value)}><option value="">–</option>{region.crop_list.map((c) => <option key={c.id} value={c.id}>{pick(c.name, lang)}</option>)}</select></Field>
-            <Field label={t("scan.plot")}><select className="input" value={plotId} onChange={(e) => setPlotId(e.target.value)}><option value="">–</option>{plots.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>
-            <Button busy={busy} disabled={!file} onClick={analyze}><ScanLine size={16} />{busy ? t("scan.analyzing") : t("scan.analyze")}</Button>
-          </div>
+
+          {mode === "upload" ? (
+            <>
+              <div className="drop" onClick={() => input.current.click()} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); choose(e.dataTransfer.files[0]); }} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && input.current.click()}>
+                {preview ? <img src={preview} alt="" /> : <><Camera size={30} aria-hidden /><div><b>{t("scan.upload")}</b></div><div className="tiny">{t("scan.hint")}</div></>}
+                <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" hidden onChange={(e) => choose(e.target.files[0])} />
+              </div>
+              <div className="stack" style={{ marginTop: 14 }}>
+                <Button busy={busy} disabled={!file} onClick={analyze}><ScanLine size={16} />{busy ? t("scan.analyzing") : t("scan.analyze")}</Button>
+              </div>
+            </>
+          ) : (
+            <div className="stack">
+              <div className="live-camera">
+                <video ref={video} playsInline muted aria-label={t("scan.live_video")} />
+                {!live && <div className="live-camera-placeholder"><Camera size={34} /><div>{t("scan.live_hint")}</div></div>}
+              </div>
+              <canvas ref={canvas} hidden />
+              <div className="row wrap">
+                {!live ? (
+                  <Button onClick={startCamera}><Camera size={16} />{t("scan.start_live")}</Button>
+                ) : (
+                  <>
+                    <Button onClick={captureAndAnalyze} busy={busy}><ScanLine size={16} />{t("scan.scan_now")}</Button>
+                    <Button className="ghost" onClick={stopCamera}>{t("scan.stop_live")}</Button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </Card>
 
         <div className="stack">
@@ -82,7 +151,7 @@ export default function Scanner() {
               </div>
               {r.actions_prudentes?.length > 0 && <div style={{ marginTop: 14 }}><h4>{t("scan.prudent")}</h4><ul style={{ margin: "6px 0 0", paddingInlineStart: 20 }}>{r.actions_prudentes.map((x, i) => <li key={i}>{x}</li>)}</ul></div>}
               <Notice tone="warn">{t("scan.disclaimer")}</Notice>
-              {res.scan_id && res.mode === "model" && (
+              {res.scan_id && (res.mode === "model" || res.mode === "gemini") && (
                 <div style={{ marginTop: 12 }}>
                   {saved ? <Notice tone="ok">{t("scan.confirmed")}</Notice> : (
                     <div className="row"><input className="input" placeholder={t("scan.confirm_ph")} value={label} onChange={(e) => setLabel(e.target.value)} aria-label={t("scan.confirm")} /><Button className="ghost" onClick={confirm} disabled={!label}>{t("scan.confirm")}</Button></div>
