@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ArrowRight, Droplets, Factory, Sprout, Sun, Waves, Zap, FlaskConical } from "lucide-react";
+import { Droplets, Factory, Sprout, Sun, Waves, Zap, FlaskConical } from "lucide-react";
 import { useAuth } from "../auth";
 import { LANG_LABEL, useI18n } from "../i18n";
 import Logo from "../components/Logo";
@@ -42,7 +42,7 @@ function ArtJP() {
   );
 }
 
-function Side({ code, active, dim, onSelect, onBack, panelLang, setPanelLang }) {
+function Side({ code, onSwitch, panelLang, setPanelLang }) {
   const { tl } = useI18n();
   const L = (k, p) => tl(panelLang, `login.${k}`, p);
   const pre = code === "TN" ? "tn" : "jp";
@@ -53,20 +53,20 @@ function Side({ code, active, dim, onSelect, onBack, panelLang, setPanelLang }) 
 
   return (
     <div
-      className={`side ${pre} ${active ? "active" : ""} ${dim ? "dim" : ""}`}
+      className={`side ${pre} active`}
       dir={dir}
       data-theme={pre}
-      onClick={!active ? onSelect : undefined}
-      role={!active ? "button" : undefined}
-      tabIndex={!active ? 0 : undefined}
-      onKeyDown={!active ? (e) => (e.key === "Enter" || e.key === " ") && onSelect() : undefined}
-      aria-label={!active ? `${L("enter")} ${L(`${pre}_name`)}` : undefined}
     >
       {code === "TN" ? <ArtTN /> : <ArtJP />}
       <div className="row between" style={{ position: "relative", zIndex: 3 }}>
         <div className="brandline"><Logo className="logo" mono style={{ width: 30, height: 30 }} /><span>SalinityShield</span></div>
-        <div className="mini-lang" onClick={(e) => e.stopPropagation()}>
-          <div className="lang-switch">{PANEL_LANGS[code].map((l) => <button key={l} className={l === panelLang ? "active" : ""} onClick={() => setPanelLang(l)} lang={l}>{LANG_LABEL[l]}</button>)}</div>
+        <div className="mini-lang">
+          <div className="lang-switch">
+            {PANEL_LANGS[code].map((l) => <button key={l} className={l === panelLang ? "active" : ""} onClick={() => setPanelLang(l)} lang={l}>{LANG_LABEL[l]}</button>)}
+          </div>
+          <button type="button" className="country-switch" onClick={onSwitch}>
+            {L("switch")}: {L(`${pre === "tn" ? "jp" : "tn"}_name`)}
+          </button>
         </div>
       </div>
 
@@ -77,20 +77,14 @@ function Side({ code, active, dim, onSelect, onBack, panelLang, setPanelLang }) 
         </div>
         <p style={{ fontSize: 17, opacity: .95, margin: 0 }}>{L(`${pre}_head`)}</p>
 
-        {!active && (
-          <>
-            <div className="problems">
-              {[1, 2, 3].map((i) => {
-                const Ico = icons[i - 1];
-                return <div className="problem" key={i}><Ico size={20} aria-hidden /><div><b>{L(`${pre}_p${i}_t`)}</b>{L(`${pre}_p${i}`)}</div></div>;
-              })}
-            </div>
-            <div className="figures">{figs.map((f, i) => <div key={f}><b className="num">{figVals[i]}</b><span>{L(f)}</span></div>)}</div>
-            <button className="cta" onClick={onSelect}>{L("enter")} {L(`${pre}_name`)} <ArrowRight size={18} className="flip" /></button>
-          </>
-        )}
-
-        {active && <AuthCard code={code} panelLang={panelLang} onBack={onBack} />}
+        <div className="problems">
+          {[1, 2, 3].map((i) => {
+            const Ico = icons[i - 1];
+            return <div className="problem" key={i}><Ico size={20} aria-hidden /><div><b>{L(`${pre}_p${i}_t`)}</b>{L(`${pre}_p${i}`)}</div></div>;
+          })}
+        </div>
+        <div className="figures">{figs.map((f, i) => <div key={f}><b className="num">{figVals[i]}</b><span>{L(f)}</span></div>)}</div>
+        <AuthCard code={code} panelLang={panelLang} onBack={onSwitch} />
       </div>
 
       <div className="tiny" style={{ position: "relative", zIndex: 2, opacity: .85 }}>{L("footer")}</div>
@@ -146,7 +140,7 @@ function AuthCard({ code, panelLang, onBack }) {
 
 export default function Login() {
   const { regions } = useAuth();
-  const [sel, setSel] = useState(null);
+  const [sel, setSel] = useState("TN");
   const [tnLang, setTnLang] = useState("fr");
   const [jpLang, setJpLang] = useState("ja");
   const { setLang } = useI18n();
@@ -160,8 +154,9 @@ export default function Login() {
 
   return (
     <div className="login" dir="ltr">
-      <Side code="TN" active={sel === "TN"} dim={sel === "JP"} onSelect={() => setSel("TN")} onBack={() => setSel(null)} panelLang={tnLang} setPanelLang={setTnLang} />
-      <Side code="JP" active={sel === "JP"} dim={sel === "TN"} onSelect={() => setSel("JP")} onBack={() => setSel(null)} panelLang={jpLang} setPanelLang={setJpLang} />
+      {sel === "TN"
+        ? <Side code="TN" onSwitch={() => setSel("JP")} panelLang={tnLang} setPanelLang={setTnLang} />
+        : <Side code="JP" onSwitch={() => setSel("TN")} panelLang={jpLang} setPanelLang={setJpLang} />}
       {!regions && <div className="toast" role="alert">…</div>}
     </div>
   );
