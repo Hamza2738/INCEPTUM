@@ -1,0 +1,9 @@
+{
+  "_note": "Approximate volumetric water content at field capacity (fc) and wilting point (wp), midpoints of FAO-56 Table 19 ranges. Replace with measured values when available.",
+  "sand": {"fc": 0.12, "wp": 0.045, "name": {"en": "Sand", "fr": "Sable", "ar": "رملية", "ja": "砂土"}},
+  "sandy_loam": {"fc": 0.19, "wp": 0.085, "name": {"en": "Sandy loam", "fr": "Sablo-limoneux", "ar": "رملية طينية خفيفة", "ja": "砂壌土"}},
+  "loam": {"fc": 0.25, "wp": 0.12, "name": {"en": "Loam", "fr": "Limon", "ar": "طميية", "ja": "壌土"}},
+  "silt_loam": {"fc": 0.29, "wp": 0.14, "name": {"en": "Silt loam", "fr": "Limon fin", "ar": "طميية غرينية", "ja": "シルト質壌土"}},
+  "clay_loam": {"fc": 0.33, "wp": 0.20, "name": {"en": "Clay loam", "fr": "Argilo-limoneux", "ar": "طينية طميية", "ja": "埴壌土"}},
+  "clay": {"fc": 0.38, "wp": 0.25, "name": {"en": "Clay", "fr": "Argile", "ar": "طينية", "ja": "埴土"}}
+}

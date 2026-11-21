@@ -1,0 +1,33 @@
+# secrets and local config
+.env
+*.env.local
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+backend/instance/*.db
+backend/instance/*.sqlite
+
+# weather cache (rebuilt on demand)
+backend/data/weather_cache/*
+!backend/data/weather_cache/.gitkeep
+
+# real uploads and lab reports (privacy). Keep only the README files.
+backend/data/lab_samples/*
+!backend/data/lab_samples/README.md
+backend/data/scan_samples/*
+!backend/data/scan_samples/README.md
+backend/data/agridata/raw/
+
+# node
+node_modules/
+frontend/dist/
+.vite/
+
+# os / editors
+.DS_Store
+.idea/
+.vscode/

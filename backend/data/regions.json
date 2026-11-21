@@ -1,0 +1,87 @@
+{
+  "TN": {
+    "id": "TN",
+    "theme": "tn",
+    "name": {"en": "Tunisia", "fr": "Tunisie", "ar": "تونس", "ja": "チュニジア"},
+    "languages": ["ar", "fr", "en"],
+    "default_lang": "fr",
+    "currency": "TND",
+    "area_unit": "ha",
+    "area_factor": 1,
+    "n_unit": "kg/ha",
+    "n_factor": 1,
+    "map": {"center": [33.8, 9.4], "zoom": 6},
+    "climate": "tn",
+    "focus": ["salinity", "energy", "water"],
+    "default_crop": "date_palm",
+    "crops": ["date_palm", "olive", "tomato", "durum_wheat", "citrus", "potato", "pepper", "almond", "barley"],
+    "defaults": {"om_pct": 1.5, "n_min_kg_ha": 30},
+    "n_price_per_kg": 1.5,
+    "tariff": {
+      "note": "ASSUMPTION: replace with the official STEG agricultural tariff before presenting",
+      "hours": [0.20,0.20,0.20,0.20,0.20,0.20,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.28,0.40,0.40,0.40,0.40,0.20,0.20],
+      "peak_hours": [18, 19, 20, 21]
+    },
+    "pv": {"capex_per_kw": 2500, "ghi_fallback_kwh_m2_year": 1950, "note": "ASSUMPTION: ask one installer for a quote"},
+    "standards": {"nitrate_limit_mg_l_n": null},
+    "policy": null,
+    "sources": [
+      {"label": "FAO Irrigation and Drainage Paper 56 (ET)", "url": "https://www.fao.org/3/x0490e/x0490e00.htm"},
+      {"label": "FAO Irrigation and Drainage Paper 29 (water quality, salinity)", "url": "https://www.fao.org/3/t0234e/t0234e00.htm"},
+      {"label": "Open-Meteo API", "url": "https://open-meteo.com/en/docs"},
+      {"label": "agridata.tn (statistics, to be ingested into data/agridata)", "url": "https://agridata.tn"}
+    ],
+    "demo_plots": [
+      {"name": "Oasis de Kébili, palmier dattier", "lat": 33.704, "lon": 8.969, "area_ha": 8, "crop_id": "date_palm", "soil_texture": "sandy_loam", "irrigation_type": "surface", "well_depth_m": 120, "pump_eff": 0.55, "water_ec": 3.8, "fert_n_current": 160, "greenhouse": false,
+       "test": {"ph": 7.9, "ec": 4.2, "n_ppm": 18, "om": 1.0, "days_ago": 120}},
+      {"name": "Serre de Tozeur, tomate", "lat": 33.919, "lon": 8.134, "area_ha": 2, "crop_id": "tomato", "soil_texture": "sandy_loam", "irrigation_type": "drip", "well_depth_m": 90, "pump_eff": 0.55, "water_ec": 4.5, "fert_n_current": 320, "greenhouse": true,
+       "test": {"ph": 7.7, "ec": 5.2, "n_ppm": 35, "om": 1.4, "days_ago": 60}},
+      {"name": "Oliveraie de Sfax", "lat": 34.740, "lon": 10.760, "area_ha": 15, "crop_id": "olive", "soil_texture": "loam", "irrigation_type": "drip", "well_depth_m": 60, "pump_eff": 0.55, "water_ec": 2.4, "fert_n_current": 90, "greenhouse": false, "test": null}
+    ]
+  },
+  "JP": {
+    "id": "JP",
+    "theme": "jp",
+    "name": {"en": "Japan", "fr": "Japon", "ar": "اليابان", "ja": "日本"},
+    "languages": ["ja", "en"],
+    "default_lang": "ja",
+    "currency": "JPY",
+    "area_unit": "10a",
+    "area_factor": 10,
+    "n_unit": "kg/10a",
+    "n_factor": 0.1,
+    "map": {"center": [36.0, 138.0], "zoom": 5},
+    "climate": "jp",
+    "focus": ["nutrients", "nitrate", "salinity"],
+    "default_crop": "tea",
+    "crops": ["tea", "rice", "tomato", "cabbage", "strawberry", "mandarin"],
+    "defaults": {"om_pct": 3.0, "n_min_kg_ha": 40},
+    "n_price_per_kg": 200,
+    "tariff": {
+      "note": "ASSUMPTION: replace with your utility's agricultural tariff before presenting",
+      "hours": [22,22,22,22,22,22,22,30,30,30,30,30,30,30,30,30,30,30,36,36,36,36,22,22],
+      "peak_hours": [18, 19, 20, 21]
+    },
+    "pv": {"capex_per_kw": 260000, "ghi_fallback_kwh_m2_year": 1350, "note": "ASSUMPTION: replace with a local installer quote"},
+    "standards": {"nitrate_limit_mg_l_n": 10, "note": "Japanese environmental standard for groundwater nitrate, 10 mg/L (verify it is expressed as nitrate-nitrogen)"},
+    "policy": {
+      "name": "MIDORI Strategy for Sustainable Food Systems (MAFF)",
+      "chem_fertilizer_reduction_2030_pct": 20,
+      "chem_fertilizer_reduction_2050_pct": 30
+    },
+    "sources": [
+      {"label": "MAFF, MIDORI Strategy (fertilizer reduction targets)", "url": "https://www.maff.go.jp/e/policies/env/env_policy/midori.html"},
+      {"label": "OECD, nutrient balances in agriculture (Japan has a high N surplus per hectare)", "url": "https://www.oecd.org/en/publications/trends-and-drivers-of-agri-environmental-performance-in-oecd-countries_b59b1142-en/full-report/nutrient-balances-in-agriculture_ab6ac5dc.html"},
+      {"label": "Yamada et al., Nutrient loss from a tea plantation area in Japan", "url": "https://www.jstage.jst.go.jp/article/jwet/7/4/7_4_331/_article/-char/en"},
+      {"label": "Miura et al., nitrogen leaching in a tea field (50 kg N/10a guideline)", "url": "https://agris.fao.org/search/es/records/64724ab02c1d629bc979dab4"},
+      {"label": "Open-Meteo API", "url": "https://open-meteo.com/en/docs"}
+    ],
+    "demo_plots": [
+      {"name": "静岡の茶園", "lat": 34.74, "lon": 138.22, "area_ha": 3, "crop_id": "tea", "soil_texture": "silt_loam", "irrigation_type": "sprinkler", "well_depth_m": 30, "pump_eff": 0.6, "water_ec": 0.3, "fert_n_current": 600, "greenhouse": false,
+       "test": {"ph": 4.6, "ec": 0.7, "n_ppm": 55, "om": 5.0, "days_ago": 90}},
+      {"name": "熊本の施設トマト", "lat": 32.79, "lon": 130.74, "area_ha": 0.6, "crop_id": "tomato", "soil_texture": "loam", "irrigation_type": "drip", "well_depth_m": 40, "pump_eff": 0.6, "water_ec": 0.5, "fert_n_current": 400, "greenhouse": true,
+       "test": {"ph": 6.1, "ec": 2.9, "n_ppm": 70, "om": 3.2, "days_ago": 45}},
+      {"name": "新潟の水田", "lat": 37.90, "lon": 139.03, "area_ha": 2, "crop_id": "rice", "soil_texture": "clay_loam", "irrigation_type": "paddy", "well_depth_m": 10, "pump_eff": 0.6, "water_ec": 0.2, "fert_n_current": 75, "greenhouse": false, "test": null}
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+services:
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    env_file:
+      - backend/.env        # copy backend/.env.example to backend/.env first
+    environment:
+      DATABASE_URL: sqlite:////app/backend/instance/salinityshield.db
+    volumes:
+      - ss_instance:/app/backend/instance                 # database
+      - ./backend/data:/app/backend/data                  # your data files (yields_prices.csv, lab samples...)
+volumes:
+  ss_instance:
