@@ -36,9 +36,9 @@ export function Pill({ tone = "neutral", children, icon = true }) {
   return <span className={`pill ${tone}`}>{icon && <Icon size={14} aria-hidden />}{children}</span>;
 }
 
-export function Notice({ tone = "info", children, icon }) {
+export function Notice({ tone = "info", children, icon, ...props }) {
   const Icon = icon || TONE_ICON[tone] || Info;
-  return <div className={`notice ${tone}`} role={tone === "risk" ? "alert" : undefined}><Icon size={18} aria-hidden /><div>{children}</div></div>;
+  return <div {...props} className={`notice ${tone} ${props.className || ""}`} role={tone === "risk" ? "alert" : undefined}><Icon size={18} aria-hidden /><div>{children}</div></div>;
 }
 
 export function AssumptionBadge() {

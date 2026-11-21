@@ -5,7 +5,7 @@ from flask import Blueprint, g, jsonify, request
 from ..auth import login_required
 from ..extensions import db
 from ..models import JournalEntry, Plot, SoilTest
-from ..services import data
+from ..services import data, openmeteo
 
 bp = Blueprint("plots", __name__, url_prefix="/api")
 
@@ -75,6 +75,44 @@ def apply_plot(p, b):
 def list_plots():
     plots = Plot.query.filter_by(user_id=g.user.id).order_by(Plot.id).all()
     return jsonify(plots=[p.to_dict() for p in plots])
+
+
+@bp.post("/plots/location-suggestions")
+@login_required
+def location_suggestions():
+    b = request.get_json(silent=True) or {}
+    lat, lon = num(b.get("lat")), num(b.get("lon"))
+    if lat is None or lon is None:
+        return jsonify(error="invalid_input"), 400
+    lat0, lat1, lon0, lon1 = BOUNDS[g.user.region]
+    if not (lat0 <= lat <= lat1 and lon0 <= lon <= lon1):
+        return jsonify(error="outside_region"), 400
+
+    suggestions = {"soil_texture": "loam", "source": "region_default"}
+    try:
+        weather = openmeteo.get_weather(lat, lon)
+        today = dt.date.today()
+        future = [row for row in weather.get("days", []) if str(row.get("date")) == today.isoformat()]
+        if not future:
+            future = weather.get("days", [])[:1]
+        row = future[0] if future else {}
+        rain = max(0.0, float(row.get("rain", 0) or 0))
+        tmin, tmax = row.get("tmin"), row.get("tmax")
+        temp = round((float(tmin) + float(tmax)) / 2, 1) if tmin is not None and tmax is not None else None
+        suggestions.update({
+            "weather_source": weather.get("source"),
+            "rain_mm_today": rain,
+            "temperature_c": temp,
+            "forecast_available": True,
+        })
+    except Exception:
+        suggestions["forecast_available"] = False
+
+    if g.user.region == "TN":
+        suggestions.update({"soil_texture": "loam", "water_ec": 2.5, "irrigation_type": "drip", "well_depth_m": 80, "pump_eff": 0.55, "fert_n": 100})
+    else:
+        suggestions.update({"soil_texture": "loam", "water_ec": 0.4, "irrigation_type": "sprinkler", "well_depth_m": 20, "pump_eff": 0.55, "fert_n": 30})
+    return jsonify(suggestions=suggestions)
 
 
 @bp.post("/plots")

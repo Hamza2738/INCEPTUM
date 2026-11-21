@@ -34,6 +34,25 @@ def dashboard():
             if adv["urgency"] in ("high", "medium") and adv["code"] != "all_good":
                 alerts.append(dict(adv, plot_id=it["plot"]["id"], plot_name=it["plot"]["name"]))
     alerts.sort(key=lambda a: a["score"], reverse=True)
+
+    notifications = []
+    for it in items:
+        plot = it["plot"]
+        if it["days_to_irrigation"] is not None and it["days_to_irrigation"] <= 1 and (it["today_need_mm"] or 0) > 0:
+            notifications.append({"kind": "irrigation", "tone": "risk", "plot_id": plot["id"], "plot_name": plot["name"], "code": "notify_irrigation_today", "params": {"mm": round(it["today_need_mm"], 1)}})
+        elif it["days_to_irrigation"] is not None and it["days_to_irrigation"] <= 3:
+            notifications.append({"kind": "irrigation", "tone": "warn", "plot_id": plot["id"], "plot_name": plot["name"], "code": "notify_irrigation_soon", "params": {"days": int(it["days_to_irrigation"])}})
+
+        test = it.get("latest_test")
+        if not test:
+            notifications.append({"kind": "soil", "tone": "info", "plot_id": plot["id"], "plot_name": plot["name"], "code": "notify_soil_test"})
+        elif test.get("ec") is not None and test["ec"] > 4:
+            notifications.append({"kind": "soil", "tone": "warn", "plot_id": plot["id"], "plot_name": plot["name"], "code": "notify_soil_salt", "params": {"ec": round(test["ec"], 1)}})
+
+        if not plot.get("sowing_date"):
+            notifications.append({"kind": "planting", "tone": "info", "plot_id": plot["id"], "plot_name": plot["name"], "code": "notify_planting"})
+
+    notifications = notifications[:10]
     totals = {
         "plots": len(items), "area_ha": round(sum(i["plot"]["area_ha"] for i in items), 2),
         "annual_energy_cost": round(sum(i["annual_cost"] or 0 for i in items)), "annual_kwh": round(sum(i["annual_kwh"] or 0 for i in items)),
@@ -45,7 +64,7 @@ def dashboard():
         cur = sum(i["plot"]["fert_n_current"] * i["plot"]["area_ha"] for i in items)
         rec = cur - totals["saving_n_kg"]
         totals["fertilizer_reduction_pct"] = round(100 * (cur - rec) / cur, 1) if cur > 0 else 0
-    return jsonify(items=items, alerts=alerts[:8], totals=totals)
+    return jsonify(items=items, alerts=alerts[:8], notifications=notifications, totals=totals)
 
 
 # ---- map -------------------------------------------------------------------------------------------

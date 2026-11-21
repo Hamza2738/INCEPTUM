@@ -225,6 +225,15 @@ table.t td.n, table.t th.n { text-align: end; font-variant-numeric: tabular-nums
   .side .country-info .figures { justify-content: flex-start; }
 }
 
+.notification-list { display: grid; gap: 8px; }
+.notification-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); background: var(--surface); text-decoration: none; }
+.notification-item:hover { border-color: var(--primary); transform: translateY(-1px); }
+.notification-item.warn { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 30%, var(--line)); }
+.notification-item.risk { background: var(--risk-soft); border-color: color-mix(in srgb, var(--risk) 30%, var(--line)); }
+.notification-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: var(--primary-soft); color: var(--primary); flex: none; }
+.notification-item.risk .notification-icon { background: var(--risk-soft); color: var(--risk); }
+.notification-item.warn .notification-icon { background: var(--warn-soft); color: var(--warn); }
+
 /* ---------- misc ---------- */
 .kv { display: grid; grid-template-columns: 1fr auto; gap: 6px 14px; font-size: 14px; }
 .kv dt { color: var(--muted); } .kv dd { margin: 0; text-align: end; font-weight: 500; font-variant-numeric: tabular-nums; }
@@ -252,7 +261,8 @@ table.t td.n, table.t th.n { text-align: end; font-variant-numeric: tabular-nums
 .tt b { display: block; margin-bottom: 2px; }
 .leaflet-container { font-family: var(--font); border-radius: var(--radius); z-index: 1; }
 .map-box { height: 460px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); }
-.map-box.sm { height: 280px; }
+.map-box.sm { height: 280px; position: relative; }
+.map-locate { position: absolute; z-index: 500; top: 10px; right: 10px; width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--primary); font-size: 22px; line-height: 1; box-shadow: 0 4px 14px rgba(0,0,0,.12); cursor: pointer; }
 .chat { display: flex; flex-direction: column; gap: 10px; max-height: 480px; overflow-y: auto; padding: 4px; }
 .bubble { padding: 10px 14px; border-radius: 14px; max-width: 86%; white-space: pre-wrap; }
 .bubble.me { align-self: flex-end; background: var(--primary); color: #fff; border-end-end-radius: 4px; }

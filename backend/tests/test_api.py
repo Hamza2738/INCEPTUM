@@ -65,6 +65,16 @@ def test_japan_problem_is_nutrients_and_tunisia_problem_is_salt(client):
     assert s["verdict"] != "OK" and s["lr"] is not None
 
 
+def test_location_suggestions(client):
+    h = login(client, "demo.tn@salinityshield.app")
+    r = client.post("/api/plots/location-suggestions", headers=h, json={"lat": 33.7, "lon": 9.1})
+    assert r.status_code == 200
+    s = r.json["suggestions"]
+    assert s["forecast_available"] is True
+    assert s["irrigation_type"] == "drip"
+    assert client.post("/api/plots/location-suggestions", headers=h, json={"lat": 48.8, "lon": 2.3}).status_code == 400
+
+
 def test_crud_validation_and_ownership(client):
     h = login(client, "demo.tn@salinityshield.app")
     r = client.post("/api/plots", headers=h, json={"name": "T", "lat": 35.0, "lon": 10.0, "area_ha": 2, "crop_id": "olive", "water_ec": 2.0})
@@ -106,6 +116,7 @@ def test_dashboard_and_map(client):
         h = login(client, email)
         d = client.get("/api/dashboard", headers=h).json
         assert d["totals"]["plots"] >= 3 and (key is None or key in d["totals"])
+        assert isinstance(d["notifications"], list)
         m = client.post("/api/map/measurements", headers=h, json={"lat": 33.7, "lon": 8.9, "kind": "ec", "value": 4.4})
         assert m.status_code == 201
         assert len(client.get("/api/map/overview", headers=h).json["measurements"]) >= 1

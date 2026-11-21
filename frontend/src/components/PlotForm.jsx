@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../auth";
 import { useI18n } from "../i18n";
 import { areaIn, areaOut, nIn, nOut, pick } from "../lib/format";
@@ -30,7 +30,31 @@ export default function PlotForm({ plot, onSaved, onCancel }) {
   }));
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [locationInfo, setLocationInfo] = useState(null);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value });
+
+  useEffect(() => {
+    if (!isNew || f.lat === "" || f.lon === "") return;
+    const timer = window.setTimeout(async () => {
+      try {
+        const r = await api_post_location(Number(f.lat), Number(f.lon));
+        const s = r.suggestions;
+        setLocationInfo(s);
+        setF((p) => ({
+          ...p,
+          soil_texture: s.soil_texture || p.soil_texture,
+          water_ec: s.water_ec ?? p.water_ec,
+          irrigation_type: s.irrigation_type || p.irrigation_type,
+          well_depth_m: s.well_depth_m ?? p.well_depth_m,
+          pump_eff: s.pump_eff ?? p.pump_eff,
+          fert_n: s.fert_n ?? p.fert_n,
+        }));
+      } catch (_) {
+        setLocationInfo(null);
+      }
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [f.lat, f.lon, isNew]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -75,6 +99,7 @@ export default function PlotForm({ plot, onSaved, onCancel }) {
       <div>
         <div className="field"><label>{t("plots.location")}</label><span className="hint">{t("plots.location_hint")}</span></div>
         <MapPicker lat={f.lat} lon={f.lon} center={region.map.center} zoom={region.map.zoom} onPick={(la, lo) => setF((p) => ({ ...p, lat: r2(la, 4), lon: r2(lo, 4) }))} />
+        {locationInfo && <Notice tone="ok" style={{ marginTop: 10 }}>{t("plots.location_auto")}</Notice>}
         <div className="form-grid" style={{ marginTop: 10 }}>
           <Field label={t("plots.lat")}><input className="input" type="number" step="any" value={f.lat} onChange={set("lat")} required /></Field>
           <Field label={t("plots.lon")}><input className="input" type="number" step="any" value={f.lon} onChange={set("lon")} required /></Field>
@@ -90,3 +115,4 @@ export default function PlotForm({ plot, onSaved, onCancel }) {
 import { api } from "../api";
 const api_post = (b) => api.post("/plots", b);
 const api_put = (id, b) => api.put(`/plots/${id}`, b);
+const api_post_location = (lat, lon) => api.post("/plots/location-suggestions", { lat, lon });

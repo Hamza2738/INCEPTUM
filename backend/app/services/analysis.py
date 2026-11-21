@@ -207,6 +207,7 @@ def compact(plot, user):
     """Small summary for lists, dashboard and map (reuses the cached full analysis)."""
     a = analyze(plot, user)
     w = a["water"]["summary"]
+    test = plot.tests[0].to_dict() if plot.tests else None
     return {
         "plot": a["plot"], "crop": a["crop"], "verdict": a["salinity"]["verdict"], "yield_rel": a["salinity"]["yield_rel"], "lr": a["salinity"]["lr"], "ecw": a["salinity"]["ecw"],
         "days_to_irrigation": w["days_to_irrigation"], "depletion_pct_raw": w["depletion_pct_raw"], "ks_today": w["ks_today"],
@@ -216,4 +217,5 @@ def compact(plot, user):
         "saving_n_cost": a["fertilizer"]["savings"]["cost"], "saving_n_kg": a["fertilizer"]["savings"]["kg_n"],
         "advice": a["advice"], "risks": a["risks"], "warnings": a["warnings"], "weather": a["weather"], "yield_factor": a["yield_factor"],
         "water_cost_season": a["energy"]["annual_cost"] if a["energy"] else 0,
+        "latest_test": test,
     }

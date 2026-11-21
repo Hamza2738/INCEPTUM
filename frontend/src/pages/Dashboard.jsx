@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Droplets, Leaf, Plus, Sprout, FlaskConical } from "lucide-react";
+import { ArrowRight, Droplets, Leaf, Plus, Sprout, FlaskConical, TestTube2 } from "lucide-react";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { useI18n } from "../i18n";
@@ -23,7 +23,7 @@ export default function Dashboard() {
 
   if (error) return <ErrorNote error={error} />;
   if (!data || !region) return <Spinner />;
-  const { items, alerts, totals } = data;
+  const { items, alerts, notifications = [], totals } = data;
   const isJP = region.id === "JP";
   const limit = region.standards?.nitrate_limit_mg_l_n;
 
@@ -53,6 +53,23 @@ export default function Dashboard() {
       </div>
 
       {synthetic && <Notice tone="warn">{t("dash.weather_synthetic")}</Notice>}
+
+      {notifications.length > 0 && (
+        <Card title={t("dash.notifications_title")} sub={t("dash.notifications_sub")}>
+          <div className="notification-list">
+            {notifications.map((n, i) => {
+              const Icon = n.kind === "irrigation" ? Droplets : n.kind === "soil" ? TestTube2 : Leaf;
+              return (
+                <Link key={`${n.code}-${n.plot_id}-${i}`} to={`/plots/${n.plot_id}`} className={`notification-item ${n.tone || "info"}`}>
+                  <span className="notification-icon"><Icon size={18} aria-hidden /></span>
+                  <div className="grow"><b>{n.plot_name}</b><div className="small">{t(`dash.notifications.${n.code}`, n.params || {})}</div></div>
+                  <ArrowRight size={16} className="flip" aria-hidden />
+                </Link>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       <div className="grid cols-4">
         <Card><Stat label={t("dash.kpi_area")} value={num(totals.area_ha * region.area_factor, lang, 1)} unit={region.area_unit} note={`${totals.plots} ${t("dash.kpi_plots").toLowerCase()}`} /></Card>
