@@ -5,6 +5,7 @@ import { useAuth } from "../auth";
 import { LANG_LABEL, useI18n } from "../i18n";
 import { pick } from "../lib/format";
 import Logo from "./Logo";
+import ModeToggle from "./ModeToggle";
 import { useFonts } from "./art/useFonts";
 
 const NAV = [
@@ -52,7 +53,7 @@ export default function Layout() {
             <span className="region-chip">{region ? pick(region.name, lang) : ""} · {region ? region.currency : ""}</span>
             <span className="muted small hide-mobile">{user?.name}</span>
           </div>
-          <div className="row"><LangSwitch /><button className="btn ghost icon sm no-print" onClick={logout} aria-label={t("logout")} title={t("logout")}><LogOut size={16} /></button></div>
+          <div className="row"><ModeToggle /><LangSwitch /><button className="btn ghost icon sm no-print" onClick={logout} aria-label={t("logout")} title={t("logout")}><LogOut size={16} /></button></div>
         </header>
         <main className="content"><Outlet /></main>
       </div>

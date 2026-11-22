@@ -6,7 +6,7 @@ export default {
   error_network: "تعذّر الاتصال بالخادم. هل الواجهة الخلفية تعمل؟",
   save: "حفظ", cancel: "إلغاء", delete: "حذف", add: "إضافة", edit: "تعديل", back: "رجوع", close: "إغلاق",
   confirm_delete: "حذف هذا العنصر؟ لا يمكن التراجع.",
-  optional: "اختياري", none: "لا شيء", unknown: "غير معروف", print: "طباعة / حفظ بصيغة PDF", reset: "إعادة ضبط", run: "تشغيل", logout: "تسجيل الخروج",
+  optional: "اختياري", none: "لا شيء", unknown: "غير معروف", mode_light: "الوضع الفاتح", mode_dark: "الوضع الداكن", print: "طباعة / حفظ بصيغة PDF", reset: "إعادة ضبط", run: "تشغيل", logout: "تسجيل الخروج",
   days: "أيام", per_year: "في السنة", per_season: "في الموسم", today: "اليوم", date: "التاريخ", note: "ملاحظة", cost: "الكلفة", quantity: "الكمية",
   assumption: "فرضية", model_estimate: "تقدير النموذج", assumption_hint: "قيمة مؤقتة: استبدلها بمصدر محلي قبل الاعتماد عليها.",
   model_hint: "يحسبها النموذج من بياناتك. هي تقدير فيه عدم يقين وليست قياسًا.",

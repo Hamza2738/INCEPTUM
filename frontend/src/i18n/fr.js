@@ -6,7 +6,7 @@ export default {
   error_network: "Serveur injoignable. Le backend est-il lancé ?",
   save: "Enregistrer", cancel: "Annuler", delete: "Supprimer", add: "Ajouter", edit: "Modifier", back: "Retour", close: "Fermer",
   confirm_delete: "Supprimer cet élément ? Action irréversible.",
-  optional: "facultatif", none: "aucun", unknown: "inconnu", print: "Imprimer / enregistrer en PDF", reset: "Réinitialiser", run: "Lancer", logout: "Se déconnecter",
+  optional: "facultatif", none: "aucun", unknown: "inconnu", mode_light: "Mode clair", mode_dark: "Mode sombre", print: "Imprimer / enregistrer en PDF", reset: "Réinitialiser", run: "Lancer", logout: "Se déconnecter",
   days: "jours", per_year: "par an", per_season: "par campagne", today: "Aujourd'hui", date: "Date", note: "Note", cost: "Coût", quantity: "Quantité",
   assumption: "hypothèse", model_estimate: "estimation du modèle", assumption_hint: "Valeur provisoire : à remplacer par une source locale avant de s'y fier.",
   model_hint: "Calculé par le modèle à partir de vos données. C'est une estimation avec incertitude, pas une mesure.",

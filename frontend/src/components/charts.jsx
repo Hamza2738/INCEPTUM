@@ -5,7 +5,8 @@ import {
 import { useI18n } from "../i18n";
 import { dateShort, num } from "../lib/format";
 
-export const C = { c1: "#2a78d6", c2: "#eb6834", c3: "#1baf7a", c4: "#eda100", grid: "#e1e0d9", axis: "#898781", ink: "#52514e" };
+// Web3 palette readable on both the dark and the light theme: bright series, faint grid, mid-grey labels.
+export const C = { c1: "#4F9DFF", c2: "#FF7A45", c3: "#2DD4A0", c4: "#F5B544", grid: "rgba(148,163,184,0.22)", axis: "#7D88AD", ink: "#7D88AD" };
 
 const axisProps = { stroke: C.axis, tick: { fill: C.axis, fontSize: 11 }, tickLine: false };
 
@@ -101,7 +102,7 @@ export function HourlyChart({ series, labelBase, labelOpt, labelPrice, labelPv, 
             <YAxis yAxisId="l" {...axisProps} />
             <YAxis yAxisId="r" orientation="right" {...axisProps} hide />
             <Tooltip content={<Tip fmtLabel={(h) => `${h}:00`} />} />
-            {forbidden.map((h) => <ReferenceArea key={`f${h}`} yAxisId="l" x1={h - 0.5} x2={h + 0.5} fill="#898781" fillOpacity={0.12} />)}
+            {forbidden.map((h) => <ReferenceArea key={`f${h}`} yAxisId="l" x1={h - 0.5} x2={h + 0.5} fill="#8A94B8" fillOpacity={0.14} />)}
             <Bar isAnimationActive={false} yAxisId="l" dataKey="base" name={labelBase} fill={C.c2} radius={[3, 3, 0, 0]} barSize={7} />
             <Bar isAnimationActive={false} yAxisId="l" dataKey="opt" name={labelOpt} fill={C.c1} radius={[3, 3, 0, 0]} barSize={7} />
             <Line isAnimationActive={false} yAxisId="r" type="stepAfter" dataKey="price" name={labelPrice} stroke={C.ink} strokeWidth={1.5} dot={false} strokeDasharray="4 3" />

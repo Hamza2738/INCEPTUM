@@ -272,7 +272,7 @@ export default function MapPage() {
                     : feature.properties?.ADMIN === "Japan"
                 ),
               }}
-              style={{ color: region.id === "TN" ? "#083f40" : "#263d68", weight: 3, fillOpacity: 0, opacity: 1 }}
+              style={{ color: region.id === "TN" ? "#2DD4BF" : "#A5B4FC", weight: 2.5, fillOpacity: 0, opacity: 0.95 }}
             />
           )}
           {coverage.map((cell, index) => {

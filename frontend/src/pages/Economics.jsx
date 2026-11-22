@@ -71,7 +71,7 @@ export default function Economics() {
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const r = res?.result;
   const mc = r?.monte_carlo;
-  const drivers = Object.fromEntries(["price", "yield", "var_cost", "water_cost", "investment"].map((d) => [d, t(`eco.drivers.${d}`)]));
+  const drivers = Object.fromEntries(["price", "yield", "var_cost", "water_cost", "investment", "fixed_cost"].map((d) => [d, t(`eco.drivers.${d}`)]));
 
   return (
     <>

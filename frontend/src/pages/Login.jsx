@@ -3,6 +3,7 @@ import { Droplets, Factory, Sprout, Sun, Waves, Zap, ArrowRightLeft } from "luci
 import { useAuth } from "../auth";
 import { LANG_LABEL, useI18n } from "../i18n";
 import Logo from "../components/Logo";
+import ModeToggle from "../components/ModeToggle";
 import { Button, Notice } from "../components/ui";
 import { useFonts } from "../components/art/useFonts";
 
@@ -73,8 +74,10 @@ function Side({ code, onSwitch, panelLang, setPanelLang }) {
       <div className="row between" style={{ position: "relative", zIndex: 3 }}>
         <div className="brandline"><Logo className="logo" mono style={{ width: 30, height: 30 }} /><span>Kizuna خير</span></div>
         <div className="mini-lang">
+          <div className="row" style={{ gap: 8 }}><ModeToggle />
           <div className="lang-switch">
             {PANEL_LANGS[code].map((l) => <button key={l} className={l === panelLang ? "active" : ""} onClick={() => setPanelLang(l)} lang={l}>{LANG_LABEL[l]}</button>)}
+          </div>
           </div>
           <button type="button" className="country-switch" onClick={onSwitch} aria-label={`${L("switch")}: ${L(`${pre === "tn" ? "jp" : "tn"}_name`)}`}>
             <ArrowRightLeft size={15} aria-hidden />

@@ -5,6 +5,7 @@ import App from "./App";
 import { AuthProvider } from "./auth";
 import { I18nProvider } from "./i18n";
 import "./styles.css";
+import "./lib/mode"; // applies the saved light/dark mode before the first render
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>

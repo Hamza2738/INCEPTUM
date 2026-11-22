@@ -7,7 +7,7 @@ export default {
   error_network: "Cannot reach the server. Is the backend running?",
   save: "Save", cancel: "Cancel", delete: "Delete", add: "Add", edit: "Edit", back: "Back", close: "Close",
   confirm_delete: "Delete this item? This cannot be undone.",
-  optional: "optional", none: "none", unknown: "unknown", print: "Print / save as PDF", reset: "Reset", run: "Run", logout: "Sign out",
+  optional: "optional", none: "none", unknown: "unknown", mode_light: "Light mode", mode_dark: "Dark mode", print: "Print / save as PDF", reset: "Reset", run: "Run", logout: "Sign out",
   days: "days", per_year: "per year", per_season: "per season", today: "Today", date: "Date", note: "Note", cost: "Cost", quantity: "Quantity",
   assumption: "assumption", model_estimate: "model estimate", assumption_hint: "Placeholder value: replace with a local source before relying on it.",
   model_hint: "Computed by the model from your inputs. It is an estimate with uncertainty, not a measurement.",

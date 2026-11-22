@@ -6,7 +6,7 @@ export default {
   error_network: "サーバーに接続できません。バックエンドは起動していますか？",
   save: "保存", cancel: "キャンセル", delete: "削除", add: "追加", edit: "編集", back: "戻る", close: "閉じる",
   confirm_delete: "この項目を削除しますか？元に戻せません。",
-  optional: "任意", none: "なし", unknown: "不明", print: "印刷 / PDFとして保存", reset: "リセット", run: "実行", logout: "ログアウト",
+  optional: "任意", none: "なし", unknown: "不明", mode_light: "ライトモード", mode_dark: "ダークモード", print: "印刷 / PDFとして保存", reset: "リセット", run: "実行", logout: "ログアウト",
   days: "日", per_year: "年あたり", per_season: "作期あたり", today: "今日", date: "日付", note: "メモ", cost: "費用", quantity: "数量",
   assumption: "仮定値", model_estimate: "モデル推定", assumption_hint: "仮の値です。利用前に地域の資料で置き換えてください。",
   model_hint: "入力値からモデルが計算した推定値です。不確実性があり、実測値ではありません。",
