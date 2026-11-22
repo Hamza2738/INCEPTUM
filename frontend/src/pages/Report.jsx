@@ -37,7 +37,7 @@ export default function Report() {
           <KV rows={[[t("nut.dose"), `${num(nOut(d.low, region), lang, 0)} – ${num(nOut(d.high, region), lang, 0)} ${region.n_unit}`], [t("nut.current"), fmtN(d.current, region, lang)], [t("nut.savings"), money(f.savings.cost, f.savings.currency, lang)], [t("nut.nitrate"), f.sim_current.summary.nitrate_mg_l == null ? "–" : `${num(f.sim_current.summary.nitrate_mg_l, lang, 0)} mg N/L`]]} />
         </Card>
         <Card title={t("tabs.energy")}>
-          <KV rows={[[t("nrg.total"), `${num(e.total_kwh_m3, lang, 2)} kWh/m³`], [t("nrg.annual_cost"), money(e.annual_cost, e.currency, lang)], [t("nrg.pv"), `${num(e.pv_kw, lang, 1)} kWp`], [t("nrg.payback"), e.payback_months_p50 ? `${num(e.payback_months_p50, lang, 0)} ${t("nrg.months")}` : t("nrg.never")]]} />
+          <KV rows={[[t("nrg.total"), `${num(e.total_co2_kg_m3, lang, 2)} ${t("nrg.unit")}`], [t("nrg.annual_cost"), money(e.annual_cost, e.currency, lang)], [t("nrg.pv"), `${num(e.pv_kw, lang, 1)} kWp`], [t("nrg.payback"), e.payback_months_p50 ? `${num(e.payback_months_p50, lang, 0)} ${t("nrg.months")}` : t("nrg.never")]]} />
         </Card>
         <Card title={t("about.assumptions_t")}><ul style={{ margin: 0, paddingInlineStart: 18 }}>{(a.assumptions || []).map((x, i) => <li key={i} className="small">{x}</li>)}</ul></Card>
       </div>

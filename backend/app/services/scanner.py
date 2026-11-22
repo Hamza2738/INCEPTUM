@@ -41,11 +41,3 @@ def prepare(image_bytes, max_side=1280):
     return buf.getvalue(), {"sharpness": round(sharp, 1), "brightness": round(bright, 1), "vegetation": round(veg, 3), "ok": not reasons, "reasons": reasons}
 
 
-DEMO_RESULT = {
-    "culture_detectee": "demo", "qualite_image": "bonne", "gravite": "moyenne", "consulter_expert": True,
-    "hypotheses": [
-        {"nom": "Salt burn on leaf margins (demo)", "type": "salinite", "confiance": 0.55, "signes_observes": ["marginal browning"], "a_verifier": ["EC of the irrigation water", "older leaves first"]},
-        {"nom": "Potassium deficiency (demo)", "type": "carence", "confiance": 0.3, "signes_observes": ["marginal chlorosis"], "a_verifier": ["soil test K"]},
-    ],
-    "actions_prudentes": ["Measure the EC of the irrigation water and the soil", "Compare with a healthy plant of the same field"],
-}

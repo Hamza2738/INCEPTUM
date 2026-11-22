@@ -6,6 +6,7 @@ requests>=2.31
 numpy>=1.26
 scipy>=1.11
 Pillow>=10.0
+XlsxWriter>=3.1
 python-dotenv>=1.0
 pytest>=8.0
 gunicorn>=21.2

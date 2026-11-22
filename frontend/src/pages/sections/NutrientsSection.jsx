@@ -86,7 +86,7 @@ export default function NutrientsSection({ a }) {
             <Stat label={t("nut.kg_saved")} value={num(sv.kg_n, lang, 0)} unit="kg N" />
             <Stat label={t("nut.cost_saved")} value={money(sv.cost, sv.currency, lang)} />
           </div>
-          <div className="tiny muted" style={{ marginTop: 8 }}>{t("nut.embedded")}: {num(sv.embedded_kwh, lang, 0)} kWh</div>
+          <div className="tiny muted" style={{ marginTop: 8 }}>{t("nut.embedded")}: {num(sv.embedded_co2_kg, lang, 0)} kg CO₂</div>
         </Card>
       </div>
     </div>

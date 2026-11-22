@@ -20,7 +20,7 @@ def _lang(b):
 @bp.get("/status")
 @login_required
 def status():
-    return jsonify(llm=llm.available(), gemini=llm.gemini_available(), scanner_demo=current_app.config["SCANNER_DEMO"], offline=current_app.config["OFFLINE_MODE"])
+    return jsonify(llm=llm.available(), gemini=llm.gemini_available(), offline=current_app.config["OFFLINE_MODE"])
 
 
 @bp.post("/advice")
@@ -45,8 +45,8 @@ def chat():
     if not p or not q:
         return jsonify(error="invalid_input"), 400
     a = analysis.analyze(p, g.user, light=True)
-    reply = llm.chat(g.user.region, _lang(b), a, q[:1000], b.get("history"))
-    return jsonify(reply=reply, llm=reply is not None, advice=a["advice"])
+    reply, model_used = llm.chat(g.user.region, _lang(b), a, q[:1000], b.get("history"))
+    return jsonify(reply=reply, llm=model_used, advice=a["advice"])
 
 
 @bp.post("/scan")
@@ -75,9 +75,7 @@ def scan():
             result, mode = llm.scan_image_gemini(g.user.region, lang, clean, "image/jpeg", context), "gemini"
         except Exception as exc:
             current_app.logger.warning("Gemini scan failed: %s", exc)
-            return jsonify(ok=True, mode="error", quality=quality, message="model_error")
-    elif current_app.config["SCANNER_DEMO"]:
-        result, mode = scanner.DEMO_RESULT, "demo"
+            result, mode = None, "error"
     rec = None
     if result:
         rec = Scan(user_id=g.user.id, plot_id=plot_id, crop=crop_id, result_json=json.dumps(result, ensure_ascii=False))

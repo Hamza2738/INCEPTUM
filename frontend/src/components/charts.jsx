@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import {
-  Area, Bar, BarChart, CartesianGrid, ComposedChart, Line, LineChart, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell,
+  Area, Bar, BarChart, CartesianGrid, ComposedChart, Line, LineChart, ReferenceArea, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis, Cell,
 } from "recharts";
 import { useI18n } from "../i18n";
 import { dateShort, num } from "../lib/format";
@@ -114,7 +114,7 @@ export function HourlyChart({ series, labelBase, labelOpt, labelPrice, labelPv, 
   );
 }
 
-export function Histogram({ hist, currency, lang }) {
+export function Histogram({ hist, currency, lang, labels = {} }) {
   const data = hist.map((b) => ({ x: b.x, n: b.n }));
   const zeroIdx = data.findIndex((d) => d.x >= 0);
   return (
@@ -122,8 +122,8 @@ export function Histogram({ hist, currency, lang }) {
       <ResponsiveContainer>
         <BarChart data={data} margin={{ top: 8, right: 8, left: -10, bottom: 0 }} barCategoryGap={2}>
           <CartesianGrid stroke={C.grid} vertical={false} />
-          <XAxis dataKey="x" {...axisProps} tickFormatter={(v) => new Intl.NumberFormat("en", { notation: "compact" }).format(v)} minTickGap={32} />
-          <YAxis {...axisProps} />
+          <XAxis dataKey="x" {...axisProps} label={{ value: `${labels.x || "Margin"} (${currency})`, position: "insideBottom", offset: -2, fill: C.axis, fontSize: 11 }} tickFormatter={(v) => new Intl.NumberFormat(lang, { notation: "compact" }).format(v)} minTickGap={32} />
+          <YAxis {...axisProps} label={{ value: labels.y || "Simulation count", angle: -90, position: "insideLeft", fill: C.axis, fontSize: 11 }} />
           <Tooltip content={<Tip fmtLabel={(v) => `${num(v, lang)} ${currency}`} />} />
           <Bar isAnimationActive={false} dataKey="n" name="runs" radius={[3, 3, 0, 0]}>
             {data.map((d, i) => <Cell key={i} fill={d.x < 0 ? C.c2 : C.c1} />)}
@@ -131,6 +131,115 @@ export function Histogram({ hist, currency, lang }) {
           {zeroIdx > 0 && <ReferenceLine x={data[zeroIdx].x} stroke={C.ink} />}
         </BarChart>
       </ResponsiveContainer>
+    </div>
+  );
+}
+
+export function MonteCarloScatter({ samples, currency, lang, labels = {} }) {
+  const data = (samples || []).map((s) => ({ run: s.run, margin: s.margin }));
+  return (
+    <div className="chart" style={{ height: 230 }}>
+      <ResponsiveContainer>
+        <ScatterChart margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
+          <CartesianGrid stroke={C.grid} />
+          <XAxis type="number" dataKey="run" name={labels.x || "Simulation"} {...axisProps} label={{ value: labels.x || "Simulation number", position: "insideBottom", offset: -2, fill: C.axis, fontSize: 11 }} />
+          <YAxis type="number" dataKey="margin" name={currency} {...axisProps} label={{ value: `${labels.y || "Margin"} (${currency})`, angle: -90, position: "insideLeft", fill: C.axis, fontSize: 11 }} tickFormatter={(v) => new Intl.NumberFormat(lang, { notation: "compact" }).format(v)} />
+          <ZAxis range={[8, 8]} />
+          <Tooltip content={<Tip fmtLabel={(v) => `#${v}`} unit={` ${currency}`} />} />
+          <ReferenceLine y={0} stroke={C.c2} />
+          <Scatter isAnimationActive={false} data={data} fill={C.c1} fillOpacity={0.35} />
+        </ScatterChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+export function MonteCarloRegression({ samples, currency, lang, labels = {}, selectedLabels = {} }) {
+  const [axis, setAxis] = useState("yield_m");
+  const options = [
+    ["yield_m", selectedLabels.yield || "Yield change"],
+    ["price_m", selectedLabels.price || "Price change"],
+    ["var_m", selectedLabels.var || "Variable cost change"],
+    ["water_m", selectedLabels.water || "Water cost change"],
+  ];
+  const analysis = useMemo(() => {
+    const data = (samples || []).map((s) => ({ x: s[axis], y: s.margin })).filter((d) => Number.isFinite(d.x) && Number.isFinite(d.y));
+    const n = data.length;
+    if (!n) return { points: [], trend: [] };
+    const mx = data.reduce((a, d) => a + d.x, 0) / n;
+    const my = data.reduce((a, d) => a + d.y, 0) / n;
+    let ssxx = 0, ssxy = 0;
+    data.forEach((d) => { ssxx += (d.x - mx) ** 2; ssxy += (d.x - mx) * (d.y - my); });
+    const slope = ssxx ? ssxy / ssxx : 0;
+    const intercept = my - slope * mx;
+    const xs = data.map((d) => d.x);
+    const min = Math.min(...xs), max = Math.max(...xs);
+    return { points: data, trend: [{ x: min, y: intercept + slope * min }, { x: max, y: intercept + slope * max }], slope, intercept };
+  }, [samples, axis]);
+  const activeName = options.find((o) => o[0] === axis)?.[1] || axis;
+  const fmtPercent = (v) => `${Math.round(v * 100)}%`;
+  return (
+    <div>
+      <div className="eco-axis-control">
+        <label htmlFor="eco-regression-axis">{labels.select || "Choose X-axis variable"}</label>
+        <select id="eco-regression-axis" className="input" value={axis} onChange={(event) => setAxis(event.target.value)}>
+          {options.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+        </select>
+      </div>
+      <div className="chart" style={{ height: 260 }}>
+        <ResponsiveContainer>
+          <ComposedChart margin={{ top: 8, right: 12, left: 6, bottom: 12 }}>
+            <CartesianGrid stroke={C.grid} />
+            <XAxis type="number" dataKey="x" {...axisProps} tickFormatter={fmtPercent} label={{ value: activeName, position: "insideBottom", offset: -8, fill: C.axis, fontSize: 11 }} />
+            <YAxis type="number" dataKey="y" {...axisProps} tickFormatter={(v) => new Intl.NumberFormat(lang, { notation: "compact" }).format(v)} label={{ value: `${labels.y || "Margin"} (${currency})`, angle: -90, position: "insideLeft", fill: C.axis, fontSize: 11 }} />
+            <Tooltip content={<Tip fmtLabel={(v) => `${fmtPercent(v)} ${activeName}`} unit={` ${currency}`} />} />
+            <ReferenceLine y={0} stroke={C.c2} />
+            <Scatter isAnimationActive={false} data={analysis.points} fill={C.c1} fillOpacity={0.28} />
+            <Line isAnimationActive={false} data={analysis.trend} type="linear" dataKey="y" stroke={C.c2} strokeWidth={3} dot={false} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="eco-regression-note"><b>{labels.trend || "Trend"}</b>{analysis.slope ? `: ${num(analysis.slope * 100, lang, 0)} ${currency} / 100% change` : ""}</div>
+    </div>
+  );
+}
+
+export function SensitivityHeatmap({ cells, currency, lang, labels = {} }) {
+  const priceValues = [...new Set((cells || []).map((c) => c.price_m))].sort((a, b) => a - b);
+  const yieldValues = [...new Set((cells || []).map((c) => c.yield_m))].sort((a, b) => a - b);
+  const values = (cells || []).map((c) => c.margin);
+  const min = values.length ? Math.min(...values) : 0;
+  const max = values.length ? Math.max(...values) : 1;
+  const colorFor = (value) => {
+    if (max === min) return "rgb(110,140,180)";
+    const t = (value - min) / (max - min);
+    if (value < 0) {
+      const red = Math.round(235 - t * 60);
+      return `rgb(${red}, ${Math.round(100 + t * 30)}, ${Math.round(80 + t * 30)})`;
+    }
+    const red = Math.round(70 + t * 40);
+    const green = Math.round(120 + t * 100);
+    return `rgb(${red},${green},${Math.round(180 - t * 20)})`;
+  };
+  const fmt = (v) => new Intl.NumberFormat(lang, { notation: "compact", maximumFractionDigits: 1 }).format(v);
+  return (
+    <div className="heatmap-wrap" dir="ltr">
+      <div className="heatmap-yield-label">{labels.yield || "Yield change"}</div>
+      <div className="heatmap-grid" style={{ gridTemplateColumns: `44px repeat(${priceValues.length}, minmax(28px, 1fr))` }}>
+        <div />
+        {priceValues.map((p) => <div className="heatmap-axis heatmap-x" key={p}>{Math.round(p * 100)}%</div>)}
+        {yieldValues.map((y) => (
+          <React.Fragment key={y}>
+            <div className="heatmap-axis heatmap-y">{Math.round(y * 100)}%</div>
+            {priceValues.map((p) => {
+              const cell = cells.find((c) => c.price_m === p && c.yield_m === y);
+              const value = cell?.margin ?? 0;
+              return <div className="heatmap-cell" key={`${p}-${y}`} style={{ background: colorFor(value) }} title={`${fmt(value)} ${currency}`}><span>{fmt(value)}</span></div>;
+            })}
+          </React.Fragment>
+        ))}
+      </div>
+      <div className="heatmap-price-label">{labels.price || "Price change"}</div>
     </div>
   );
 }

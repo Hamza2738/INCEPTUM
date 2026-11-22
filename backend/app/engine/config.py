@@ -60,6 +60,8 @@ MC_SPREAD = 0.15               # +/-15% uniform on uncertain inputs
 # ---- Economics ------------------------------------------------------------------------------
 DISCOUNT = {"TN": 0.08, "JP": 0.02}   # ASSUMPTION
 ENERGY_CO2_KG_PER_KWH = {"TN": 0.45, "JP": 0.45}   # ASSUMPTION: grid emission factor
+GAS_CO2_KG_PER_KWH = 0.2      # ASSUMPTION: natural gas combustion, used for fertiliser manufacture
+N_EMBEDDED_CO2_KG_PER_KG = round(N_EMBEDDED_KWH_PER_KG * GAS_CO2_KG_PER_KWH, 2)   # about 3 kg CO2 per kg N made
 
 ASSUMPTION_NOTES = [
     "Irrigation efficiency, effective rain, soil water at field capacity are typical values",

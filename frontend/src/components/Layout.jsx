@@ -5,6 +5,7 @@ import { useAuth } from "../auth";
 import { LANG_LABEL, useI18n } from "../i18n";
 import { pick } from "../lib/format";
 import Logo from "./Logo";
+import { useFonts } from "./art/useFonts";
 
 const NAV = [
   { to: "/", key: "dashboard", icon: LayoutDashboard, end: true },
@@ -32,9 +33,10 @@ export function LangSwitch() {
 export default function Layout() {
   const { user, region, logout } = useAuth();
   const { t, lang } = useI18n();
+  useFonts(lang);
   return (
     <div className="shell">
-      <aside className="sidebar">
+      <aside className="sidebar pattern-zellige">
         <div className="brand"><Logo className="logo" />{t("app_name")}</div>
         {NAV.map((n) => (
           <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}>

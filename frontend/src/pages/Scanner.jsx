@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Camera, ScanLine, SwitchCamera } from "lucide-react";
+import Webcam from "react-webcam";
 import { api } from "../api";
 import { useI18n } from "../i18n";
 import { dateLong, num } from "../lib/format";
@@ -11,6 +12,10 @@ export default function Scanner() {
   const [preview, setPreview] = useState(null);
   const [mode, setMode] = useState("upload");
   const [live, setLive] = useState(false);
+  const [cameraStarting, setCameraStarting] = useState(false);
+  const [cameraRequested, setCameraRequested] = useState(false);
+  const [cameraFacing, setCameraFacing] = useState("environment");
+  const [frameStatus, setFrameStatus] = useState("idle");
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState(null);
   const [error, setError] = useState(null);
@@ -19,9 +24,11 @@ export default function Scanner() {
   const [history, setHistory] = useState([]);
   const input = useRef();
   const video = useRef();
+  const webcam = useRef();
   const canvas = useRef();
   const streamRef = useRef(null);
   const liveTimer = useRef(null);
+  const busyRef = useRef(false);
 
   const loadHistory = () => api.get("/ai/scans").then((r) => setHistory(r.scans)).catch(() => {});
   useEffect(() => { loadHistory(); }, []);
@@ -30,14 +37,6 @@ export default function Scanner() {
 
   const choose = (f) => { if (!f) return; setFile(f); setPreview(URL.createObjectURL(f)); setRes(null); setSaved(false); setLabel(""); };
 
-  const analyzeFile = async (imageFile) => {
-    setBusy(true); setError(null); setRes(null); setSaved(false);
-    const fd = new FormData();
-    fd.append("file", imageFile);
-    fd.append("lang", lang);
-    try { setRes(await api.upload("/ai/scan", fd)); loadHistory(); } catch (e) { setError(e); } finally { setBusy(false); }
-  };
-
   const analyze = async () => { if (file) await analyzeFile(file); };
 
   const stopCamera = () => {
@@ -45,40 +44,104 @@ export default function Scanner() {
     liveTimer.current = null;
     if (streamRef.current) streamRef.current.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
+    if (video.current) {
+      video.current.pause?.();
+      video.current.srcObject = null;
+    }
+    setCameraRequested(false);
     setLive(false);
+    setCameraStarting(false);
+  };
+
+  const analyzeFile = async (imageFile) => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true); setError(null); setRes(null); setSaved(false); setLabel("");
+    const fd = new FormData();
+    fd.append("file", imageFile);
+    fd.append("lang", lang);
+    try {
+      const next = await api.upload("/ai/scan", fd);
+      setRes(next); setFrameStatus(next?.result?.plante_detectee ? "plant" : next?.result ? "searching" : "searching"); loadHistory();
+    } catch (e) { setError(e); } finally { busyRef.current = false; setBusy(false); }
   };
 
   const captureAndAnalyze = async () => {
-    if (!video.current || !canvas.current || busy) return;
-    const width = video.current.videoWidth;
-    const height = video.current.videoHeight;
+    const player = webcam.current?.video || video.current;
+    if (!player || !canvas.current || busyRef.current) return;
+    if (player.readyState < 2) return;
+    const width = player.videoWidth;
+    const height = player.videoHeight;
     if (!width || !height) return;
     canvas.current.width = width;
     canvas.current.height = height;
-    canvas.current.getContext("2d").drawImage(video.current, 0, 0, width, height);
-    const blob = await new Promise((resolve) => canvas.current.toBlob(resolve, "image/jpeg", 0.9));
+    const ctx = canvas.current.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(player, 0, 0, width, height);
+
+    const insetX = Math.round(width * 0.12);
+    const insetY = Math.round(height * 0.12);
+    const frameW = width - insetX * 2;
+    const frameH = height - insetY * 2;
+    const pixels = ctx.getImageData(insetX, insetY, frameW, frameH).data;
+    let greenPixels = 0;
+    for (let i = 0; i < pixels.length; i += 16) {
+      const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
+      if (g > r * 1.08 && g > b * 1.05 && g > 55) greenPixels++;
+    }
+    const greenRatio = greenPixels / Math.max(1, pixels.length / 16);
+    setFrameStatus(greenRatio > 0.12 ? "checking" : "searching");
+
+    const blob = await new Promise((resolve) => canvas.current.toBlob(resolve, "image/jpeg", 0.88));
     if (blob) await analyzeFile(new File([blob], "live-scan.jpg", { type: "image/jpeg" }));
   };
 
-  const startCamera = async () => {
+  const handleCameraReady = () => {
+    setLive(true);
+    setCameraStarting(false);
+    setFrameStatus("searching");
+    if (liveTimer.current) clearInterval(liveTimer.current);
+    window.setTimeout(captureAndAnalyze, 500);
+    liveTimer.current = window.setInterval(captureAndAnalyze, 6000);
+  };
+
+  const handleCameraError = (cameraError) => {
+    setCameraStarting(false);
+    setCameraRequested(false);
+    setLive(false);
+
+    let message = t("scan.camera_failed");
+    const name = cameraError?.name;
+    if (name === "NotAllowedError" || name === "PermissionDeniedError") message = t("scan.camera_denied");
+    else if (name === "NotFoundError" || name === "DevicesNotFoundError") message = t("scan.camera_not_found");
+    else if (name === "NotReadableError" || name === "TrackStartError") message = t("scan.camera_busy");
+    setError({ message });
+  };
+
+  const startCamera = async (preferredFacing = cameraFacing) => {
     setError(null);
+    setFrameStatus("idle");
+
     if (!navigator.mediaDevices?.getUserMedia) {
       setError({ message: t("scan.camera_unavailable") });
+      setCameraStarting(false);
       return;
     }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
-      streamRef.current = stream;
-      if (video.current) {
-        video.current.srcObject = stream;
-        await video.current.play();
-      }
-      setLive(true);
-      await captureAndAnalyze();
-      liveTimer.current = setInterval(captureAndAnalyze, 6000);
-    } catch (e) {
-      setError({ message: t("scan.camera_denied") });
+    if (!window.isSecureContext) {
+      setError({ message: t("scan.camera_secure") });
+      setCameraStarting(false);
+      return;
     }
+
+    setCameraFacing(preferredFacing);
+    setCameraStarting(true);
+    setCameraRequested(true);
+  };
+
+  const switchCamera = async () => {
+    const next = cameraFacing === "environment" ? "user" : "environment";
+    setCameraFacing(next);
+    stopCamera();
+    await startCamera(next);
   };
   const confirm = async () => { await api.post(`/ai/scan/${res.scan_id}/confirm`, { label }); setSaved(true); loadHistory(); };
 
@@ -108,16 +171,38 @@ export default function Scanner() {
           ) : (
             <div className="stack">
               <div className="live-camera">
-                <video ref={video} playsInline muted aria-label={t("scan.live_video")} />
-                {!live && <div className="live-camera-placeholder"><Camera size={34} /><div>{t("scan.live_hint")}</div></div>}
+                {cameraRequested ? (
+                  <Webcam
+                    ref={webcam}
+                    audio={false}
+                    muted
+                    playsInline
+                    mirrored={cameraFacing === "user"}
+                    screenshotFormat="image/jpeg"
+                    screenshotQuality={0.88}
+                    videoConstraints={{
+                      facingMode: { ideal: cameraFacing },
+                      width: { ideal: 1280 },
+                      height: { ideal: 720 },
+                    }}
+                    onUserMedia={handleCameraReady}
+                    onUserMediaError={handleCameraError}
+                    aria-label={t("scan.live_video")}
+                  />
+                ) : (
+                  <div className="live-camera-placeholder"><Camera size={34} /><div>{cameraStarting ? t("scan.camera_starting") : t("scan.live_hint")}</div></div>
+                )}
+                {live && <div className={`plant-focus-frame ${frameStatus}`}><span /><span /><span /><span /></div>}
+                {live && <div className={`plant-frame-status ${frameStatus}`}><ScanLine size={14} />{t(`scan.frame_${frameStatus}`)}</div>}
               </div>
               <canvas ref={canvas} hidden />
               <div className="row wrap">
                 {!live ? (
-                  <Button onClick={startCamera}><Camera size={16} />{t("scan.start_live")}</Button>
+                  <Button onClick={() => startCamera(cameraFacing)} busy={cameraStarting}><Camera size={16} />{cameraStarting ? t("scan.camera_starting") : t("scan.start_live")}</Button>
                 ) : (
                   <>
                     <Button onClick={captureAndAnalyze} busy={busy}><ScanLine size={16} />{t("scan.scan_now")}</Button>
+                    <Button className="ghost" onClick={switchCamera}><SwitchCamera size={16} />{t("scan.switch_camera")}</Button>
                     <Button className="ghost" onClick={stopCamera}>{t("scan.stop_live")}</Button>
                   </>
                 )}
@@ -131,7 +216,6 @@ export default function Scanner() {
           {res && res.ok === false && <Notice tone="warn"><div><b>{t("scan.quality_bad")}</b> {(res.quality?.reasons || []).map(reasonText).join(", ")}</div></Notice>}
           {res?.mode === "unconfigured" && <Notice tone="info">{t("scan.unconfigured")}</Notice>}
           {res?.mode === "error" && <Notice tone="risk">{t("scan.error")}</Notice>}
-          {res?.mode === "demo" && <Notice tone="warn">{t("scan.demo")}</Notice>}
           {r && (
             <Card title={t("scan.hyp")}>
               <div className="row wrap" style={{ marginBottom: 12 }}>

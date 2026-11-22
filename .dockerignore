@@ -4,3 +4,5 @@ frontend/dist
 backend/instance/*.db
 .git
 .env
+**/.venv
+**/.pytest_cache

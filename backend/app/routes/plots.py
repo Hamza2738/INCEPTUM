@@ -109,9 +109,23 @@ def location_suggestions():
         suggestions["forecast_available"] = False
 
     if g.user.region == "TN":
-        suggestions.update({"soil_texture": "loam", "water_ec": 2.5, "irrigation_type": "drip", "well_depth_m": 80, "pump_eff": 0.55, "fert_n": 100})
+        reference_points = [
+            {"name": "Tunis", "lat": 36.806, "lon": 10.181, "soil_texture": "clay_loam", "water_ec": 1.2, "irrigation_type": "drip", "well_depth_m": 60, "pump_eff": 0.55, "fert_n": 100},
+            {"name": "Sfax", "lat": 34.740, "lon": 10.760, "soil_texture": "loam", "water_ec": 2.4, "irrigation_type": "drip", "well_depth_m": 60, "pump_eff": 0.55, "fert_n": 90},
+            {"name": "Tozeur", "lat": 33.919, "lon": 8.134, "soil_texture": "sandy_loam", "water_ec": 4.5, "irrigation_type": "drip", "well_depth_m": 90, "pump_eff": 0.55, "fert_n": 320},
+            {"name": "Kébili", "lat": 33.704, "lon": 8.969, "soil_texture": "sandy_loam", "water_ec": 3.8, "irrigation_type": "surface", "well_depth_m": 120, "pump_eff": 0.55, "fert_n": 160},
+            {"name": "Gabès", "lat": 33.881, "lon": 10.098, "soil_texture": "sandy_loam", "water_ec": 3.2, "irrigation_type": "drip", "well_depth_m": 75, "pump_eff": 0.55, "fert_n": 140},
+        ]
     else:
-        suggestions.update({"soil_texture": "loam", "water_ec": 0.4, "irrigation_type": "sprinkler", "well_depth_m": 20, "pump_eff": 0.55, "fert_n": 30})
+        reference_points = [
+            {"name": "Shizuoka", "lat": 34.740, "lon": 138.220, "soil_texture": "silt_loam", "water_ec": 0.3, "irrigation_type": "sprinkler", "well_depth_m": 30, "pump_eff": 0.60, "fert_n": 600},
+            {"name": "Kumamoto", "lat": 32.790, "lon": 130.740, "soil_texture": "loam", "water_ec": 0.5, "irrigation_type": "drip", "well_depth_m": 40, "pump_eff": 0.60, "fert_n": 400},
+            {"name": "Niigata", "lat": 37.900, "lon": 139.030, "soil_texture": "clay_loam", "water_ec": 0.2, "irrigation_type": "paddy", "well_depth_m": 10, "pump_eff": 0.60, "fert_n": 75},
+        ]
+
+    nearest = min(reference_points, key=lambda r: (lat-r["lat"])**2 + ((lon-r["lon"])*1.35)**2)
+    suggestions.update({k: nearest[k] for k in ("soil_texture", "water_ec", "irrigation_type", "well_depth_m", "pump_eff", "fert_n")})
+    suggestions.update({"source": "regional_reference", "reference_name": nearest["name"]})
     return jsonify(suggestions=suggestions)
 
 
@@ -159,30 +173,6 @@ def delete_plot(pid):
     db.session.delete(p)
     db.session.commit()
     return jsonify(ok=True)
-
-
-def create_demo_plots(user):
-    """Create the demo plots of the user's region (with a soil test where the profile has one)."""
-    reg = data.region(user.region)
-    created = []
-    for spec in reg["demo_plots"]:
-        s = dict(spec)
-        test = s.pop("test", None)
-        p = Plot(user_id=user.id, **s)
-        db.session.add(p)
-        db.session.flush()
-        if test:
-            db.session.add(SoilTest(plot_id=p.id, date=dt.date.today() - dt.timedelta(days=test["days_ago"]), ph=test["ph"], ec=test["ec"],
-                                    n_ppm=test["n_ppm"], om=test["om"], source="demo"))
-        created.append(p)
-    db.session.commit()
-    return created
-
-
-@bp.post("/plots/demo")
-@login_required
-def demo_plots():
-    return jsonify(plots=[p.to_dict() for p in create_demo_plots(g.user)]), 201
 
 
 # ---- soil tests -------------------------------------------------------------------------------------

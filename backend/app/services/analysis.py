@@ -140,7 +140,7 @@ def _analyze(plot, user, whatif, light):
         "dose": dose, "known_soil_n": known, "om_pct": om, "horizon_days": H, "share_of_season": round(share, 3),
         "sim_current": sim_cur, "sim_recommended": sim_rec, "applications": sim_rec["applications"],
         "savings": {"kg_n": round(saved_kg_mid, 0), "cost": round(saved_kg_mid * reg["n_price_per_kg"], 0), "cost_bands": _bands(save_kg * reg["n_price_per_kg"]),
-                    "embedded_kwh": round(saved_kg_mid * C.N_EMBEDDED_KWH_PER_KG, 0), "currency": reg["currency"]},
+                    "embedded_kwh": round(saved_kg_mid * C.N_EMBEDDED_KWH_PER_KG, 0), "embedded_co2_kg": round(saved_kg_mid * C.N_EMBEDDED_CO2_KG_PER_KG, 0), "currency": reg["currency"]},
         "leaching_fraction": round(lf, 3), "ecw_effective": round(ecw_eff, 2), "blend_fraction": round(x_blend, 3),
     }
 
@@ -171,14 +171,21 @@ def _analyze(plot, user, whatif, light):
             "annual_cost": round(float(base["annual_cost"])), "brine_m3": round(float(base["brine_m3"])), "pv_kw": round(float(base["pv_kw"]), 1),
             "capex": round(float(base["capex"])), "pv_savings": round(float(base["pv_savings"])), "pv_share": round(float(base["pv_share"]), 2),
             "payback_months": _finite(base["payback_months"]), "co2_t_year": round(float(base["annual_kwh"]) * co2 / 1000.0, 1),
-            "bands": {"annual_kwh": _bands(mc["annual_kwh"]), "annual_cost": _bands(mc["annual_cost"]), "payback_months": _bands(mc["payback_months"], 0, cap=1e5)},
+            "co2_kg_per_kwh": co2, "pump_co2_kg_m3": round(float(base["pump_kwh_m3"]) * co2, 3), "treat_co2_kg_m3": round(float(base["treat_kwh_m3"]) * co2, 3),
+            "total_co2_kg_m3": round(float(base["total_kwh_m3"]) * co2, 3), "annual_co2_t": round(float(base["annual_kwh"]) * co2 / 1000.0, 2),
+            "pv_co2_avoided_t": round(float(base["annual_kwh"]) * float(base["pv_share"]) * co2 / 1000.0, 2),
+            "bands": {"annual_kwh": _bands(mc["annual_kwh"]), "annual_co2_t": _bands(mc["annual_kwh"] * co2 / 1000.0, 2), "annual_cost": _bands(mc["annual_cost"]), "payback_months": _bands(mc["payback_months"], 0, cap=1e5)},
             "payback_months_p50": _bands(mc["payback_months"], 0, cap=1e5)["p50"], "ghi": ghi, "tariff_note": reg["tariff"]["note"], "pv_note": reg["pv"]["note"],
             "season_days": season_days, "currency": reg["currency"], "leaching_extra_pct": round(100 * (1 / (1 - lf) - 1), 1) if lf else 0,
         }
         forb = C.FORBIDDEN_HOURS_BY_TYPE.get(plot.irrigation_type, [])
         opt_out = {"no_solar": optimizer.optimize(need_m3, float(base["total_kwh_m3"]), tariff24, reg["tariff"]["peak_hours"], 0.0, forb),
                    "with_solar": optimizer.optimize(need_m3, float(base["total_kwh_m3"]), tariff24, reg["tariff"]["peak_hours"], float(base["pv_kw"]), forb),
-                   "currency": reg["currency"], "tariff_hours": tariff24, "peak_hours": reg["tariff"]["peak_hours"], "forbidden_hours": forb}
+                   "currency": reg["currency"], "co2_kg_per_kwh": co2, "tariff_hours": tariff24, "peak_hours": reg["tariff"]["peak_hours"], "forbidden_hours": forb}
+        for res in (opt_out["no_solar"], opt_out["with_solar"]):
+            for key in ("baseline", "optimized"):
+                if key in res:
+                    res[key]["co2_kg"] = round(res[key]["kwh_grid"] * co2, 1)
 
     # ---- indicators -> advice -----------------------------------------------------------------------
     nxt = next((a for a in sim_rec["applications"] if (dt.date.fromisoformat(a["date"]) - today).days <= 7), None)

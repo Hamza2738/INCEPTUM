@@ -95,7 +95,7 @@ export function KV({ rows }) {
 export function ErrorNote({ error }) {
   const { t } = useI18n();
   if (!error) return null;
-  const msg = error.code === "network" ? t("error_network") : t("error_generic");
+  const msg = error.message || (error.code === "network" ? t("error_network") : t("error_generic"));
   return <Notice tone="risk">{msg}</Notice>;
 }
 

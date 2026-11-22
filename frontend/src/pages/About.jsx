@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { BrainCircuit, Calculator, Database, ExternalLink, ShieldAlert } from "lucide-react";
+import { Calculator, ExternalLink, ShieldAlert, Sprout } from "lucide-react";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { useI18n } from "../i18n";
@@ -18,19 +18,19 @@ export default function About() {
   return (
     <div className="stack">
       <div className="page-head"><div><h1>{t("about.title")}</h1><p>{t("about.sub")}</p></div></div>
-      <div className="grid cols-2">
-        <Card title={t("about.computed_t")}><div className="row" style={{ alignItems: "flex-start" }}><Calculator size={22} aria-hidden /><p style={{ margin: 0 }}>{t("about.computed")}</p></div></Card>
-        <Card title={t("about.ai_t")}><div className="row" style={{ alignItems: "flex-start" }}><BrainCircuit size={22} aria-hidden /><p style={{ margin: 0 }}>{t("about.ai")}</p></div></Card>
-      </div>
-      <Card title={t("about.honest_t")}>
-        <div className="stack tight">{["h1", "h2", "h3", "h4", "h5", "h6"].map((k) => <Notice key={k} tone="warn" icon={ShieldAlert}>{t(`about.${k}`)}</Notice>)}</div>
+      <Card title={t("about.simple_t")}>
+        <div className="about-steps">
+          <div className="about-step"><span className="about-step-number">1</span><div><Calculator size={20} aria-hidden /><h3>{t("about.step1_t")}</h3><p>{t("about.step1")}</p></div></div>
+          <div className="about-step"><span className="about-step-number">2</span><div><Sprout size={20} aria-hidden /><h3>{t("about.step2_t")}</h3><p>{t("about.step2")}</p></div></div>
+          <div className="about-step"><span className="about-step-number">3</span><div><ShieldAlert size={20} aria-hidden /><h3>{t("about.step3_t")}</h3><p>{t("about.step3")}</p></div></div>
+        </div>
       </Card>
+      <Notice tone="warn"><b>{t("about.caution_t")}</b><br />{t("about.caution")}</Notice>
       <Card title={t("about.assumptions_t")}>
         {plots.length > 0 && <Field label={t("about.pick_plot")}><select className="input" value={pid} onChange={(e) => setPid(e.target.value)}>{plots.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>}
         <ul style={{ margin: "12px 0 0", paddingInlineStart: 20 }}>{assumptions.map((x, i) => <li key={i} className="small" style={{ marginBottom: 4 }}>{x}</li>)}</ul>
       </Card>
-      <div className="grid cols-2">
-        <Card title={t("about.data_t")}><div className="row" style={{ alignItems: "flex-start" }}><Database size={22} aria-hidden /><p style={{ margin: 0 }}>{t("about.data")}</p></div></Card>
+      <div className="about-sources">
         <Card title={t("about.links")}>
           <ul style={{ margin: 0, paddingInlineStart: 18 }}>{(region.sources || []).map((s) => <li key={s.url} className="small" style={{ marginBottom: 6 }}><a href={s.url} target="_blank" rel="noreferrer">{s.label} <ExternalLink size={11} aria-hidden /></a></li>)}</ul>
         </Card>

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Droplets, Factory, Sprout, Sun, Waves, Zap, FlaskConical } from "lucide-react";
+import { Droplets, Factory, Sprout, Sun, Waves, Zap, ArrowRightLeft } from "lucide-react";
 import { useAuth } from "../auth";
 import { LANG_LABEL, useI18n } from "../i18n";
 import Logo from "../components/Logo";
 import { Button, Notice } from "../components/ui";
+import { useFonts } from "../components/art/useFonts";
 
-const DEMO = { TN: "demo.tn@salinityshield.app", JP: "demo.jp@salinityshield.app" };
 const PANEL_LANGS = { TN: ["fr", "ar", "en"], JP: ["ja", "en"] };
 
 function ArtTN() {
@@ -57,22 +57,35 @@ function Side({ code, onSwitch, panelLang, setPanelLang }) {
       dir={dir}
       data-theme={pre}
     >
+      {(code === "TN" || code === "JP") && (
+        <video
+          className="login-bg-video"
+          src={code === "TN" ? "/tunisia-farm.mp4" : "/japan-farm.mp4"}
+          poster={code === "TN" ? "/tunisia-farm.jpg" : undefined}
+          muted
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
+        />
+      )}
+      <div className="login-video-scrim" />
       {code === "TN" ? <ArtTN /> : <ArtJP />}
       <div className="row between" style={{ position: "relative", zIndex: 3 }}>
-        <div className="brandline"><Logo className="logo" mono style={{ width: 30, height: 30 }} /><span>SalinityShield</span></div>
+        <div className="brandline"><Logo className="logo" mono style={{ width: 30, height: 30 }} /><span>Kizuna خير</span></div>
         <div className="mini-lang">
           <div className="lang-switch">
             {PANEL_LANGS[code].map((l) => <button key={l} className={l === panelLang ? "active" : ""} onClick={() => setPanelLang(l)} lang={l}>{LANG_LABEL[l]}</button>)}
           </div>
-          <button type="button" className="country-switch" onClick={onSwitch}>
-            {L("switch")}: {L(`${pre === "tn" ? "jp" : "tn"}_name`)}
+          <button type="button" className="country-switch" onClick={onSwitch} aria-label={`${L("switch")}: ${L(`${pre === "tn" ? "jp" : "tn"}_name`)}`}>
+            <ArrowRightLeft size={15} aria-hidden />
+            <span>{L(`${pre === "tn" ? "jp" : "tn"}_name`)}</span>
           </button>
         </div>
       </div>
 
       <div className="inner split-inner">
         <div className="auth-column">
-          <AuthCard code={code} panelLang={panelLang} onBack={onSwitch} />
+          <AuthCard code={code} panelLang={panelLang} />
         </div>
 
         <section className="country-info" aria-label={L(`${pre}_name`)}>
@@ -97,7 +110,7 @@ function Side({ code, onSwitch, panelLang, setPanelLang }) {
   );
 }
 
-function AuthCard({ code, panelLang, onBack }) {
+function AuthCard({ code, panelLang }) {
   const { login, register } = useAuth();
   const { tl, setLang } = useI18n();
   const L = (k, p) => tl(panelLang, `login.${k}`, p);
@@ -109,12 +122,12 @@ function AuthCard({ code, panelLang, onBack }) {
   useEffect(() => { setLang(panelLang); }, [panelLang, setLang]);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
-  const submit = async (e, override) => {
+  const submit = async (e) => {
     e && e.preventDefault();
     setErr(""); setBusy(true);
-    const v = override || f;
+    const v = f;
     try {
-      if (mode === "signin" || override) await login(v.email, v.password, code);
+      if (mode === "signin") await login(v.email, v.password, code);
       else await register({ name: v.name, email: v.email, password: v.password, region: code, lang: panelLang });
     } catch (ex) {
       const key = `err_${ex.code}`;
@@ -131,13 +144,10 @@ function AuthCard({ code, panelLang, onBack }) {
         <div className="field"><label>{L("password")}</label><input className="input" type="password" value={f.password} onChange={set("password")} required minLength={6} autoComplete={mode === "signin" ? "current-password" : "new-password"} dir="ltr" /></div>
         {err && <Notice tone="risk">{err}</Notice>}
         <Button type="submit" busy={busy} className="block">{mode === "signin" ? L("sign_in") : L("create")}</Button>
-        <Button type="button" className="ghost block" disabled={busy} onClick={() => submit(null, { email: DEMO[code], password: "demo1234" })}><FlaskConical size={16} />{L("demo")}</Button>
-        <div className="tiny muted" style={{ textAlign: "center" }}>{L("demo_hint")}</div>
         <div className="small" style={{ textAlign: "center" }}>
           {mode === "signin" ? L("no_account") : L("have_account")}{" "}
           <button type="button" className="link" onClick={() => { setMode(mode === "signin" ? "register" : "signin"); setErr(""); }}>{mode === "signin" ? L("create") : L("sign_in")}</button>
         </div>
-        <div className="small" style={{ textAlign: "center" }}><button type="button" className="link" onClick={onBack}>{L("switch")}</button></div>
       </form>
     </div>
   );
@@ -149,6 +159,7 @@ export default function Login() {
   const [tnLang, setTnLang] = useState("fr");
   const [jpLang, setJpLang] = useState("ja");
   const { setLang } = useI18n();
+  useFonts(sel === "TN" ? tnLang : jpLang);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", sel === "JP" ? "jp" : "tn");

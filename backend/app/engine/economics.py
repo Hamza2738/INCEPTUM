@@ -51,15 +51,47 @@ def simulate(i, seed=42):
     ym = rng.triangular(0.75, 1.0, 1.15, n)
     wm = rng.triangular(0.8, 1.0, 1.3, n)
     vm = rng.triangular(0.9, 1.0, 1.15, n)
+    weather_yield_m = max(0.5, min(1.0, i.get("weather_yield_m", 1.0)))
+    if weather_yield_m < 1.0:
+        ym = ym * rng.triangular(weather_yield_m, 1.0, 1.0, n)
+    accident_prob = max(0.0, min(1.0, i.get("accident_prob", 0.02)))
+    loss_reserve = max(0.0, i.get("loss_reserve", 0.10))
     rev = i["yield_kg_ha"] * i["area_ha"] * i["yield_factor"] * ym * i["price"] * pm
     mg = rev - (i["var_cost_ha"] * i["area_ha"] * vm + i["water_cost"] * wm) - i["fixed_cost"]
+    accident_hits = rng.random(n) < accident_prob
+    accident_cost = margin * loss_reserve
+    mg = mg - accident_hits * accident_cost
     hist, edges = np.histogram(mg, bins=20)
+    mean = float(np.mean(mg))
+    std = float(np.std(mg))
+    prob_profit = float((mg >= 0).mean())
+    loss_values = mg[mg < 0]
+    expected_shortfall = float(np.mean(loss_values)) if len(loss_values) else 0.0
+
+    # A deterministic 9x9 price/yield sensitivity map uses the same margin formula.
+    heatmap = []
+    pm_values = [0.70, 0.775, 0.85, 0.925, 1.0, 1.075, 1.15, 1.225, 1.30]
+    ym_values = [0.75, 0.800, 0.850, 0.900, 1.0, 1.050, 1.100, 1.125, 1.15]
+    for ym_cell in ym_values:
+        for pm_cell in pm_values:
+            rv, vr, hm = _margin(i, price_m=pm_cell, yield_m=ym_cell)
+            heatmap.append({"price_m": round(pm_cell, 3), "yield_m": round(ym_cell, 3), "margin": round(hm)})
+
     return {
         "revenue": round(revenue), "variable_cost": round(var), "gross_margin": round(margin), "net_result": round(net),
         "breakeven_price": None if be_price is None else round(be_price, 3), "breakeven_yield_kg_ha": None if be_yield is None else round(be_yield, 0),
         "npv": round(npv), "payback_year": payback, "roi_years": None if roi_years is None else round(roi_years, 1),
         "flows": [round(f) for f in flows], "scenarios": scenarios, "tornado": tornado,
-        "monte_carlo": {"p10": round(float(np.percentile(mg, 10))), "p50": round(float(np.percentile(mg, 50))), "p90": round(float(np.percentile(mg, 90))),
-                        "prob_loss": round(float((mg < 0).mean()), 3), "runs": n,
-                        "hist": [{"x": round(float((edges[k] + edges[k + 1]) / 2)), "n": int(hist[k])} for k in range(len(hist))]},
+        "monte_carlo": {
+            "p05": round(float(np.percentile(mg, 5))), "p10": round(float(np.percentile(mg, 10))),
+            "p25": round(float(np.percentile(mg, 25))), "p50": round(float(np.percentile(mg, 50))),
+            "p75": round(float(np.percentile(mg, 75))), "p90": round(float(np.percentile(mg, 90))),
+            "p95": round(float(np.percentile(mg, 95))), "mean": round(mean), "std": round(std),
+            "prob_loss": round(float((mg < 0).mean()), 3), "prob_profit": round(prob_profit, 3),
+            "loss_margin": round(-expected_shortfall), "accident_prob": round(accident_prob, 3),
+            "loss_reserve": round(loss_reserve, 3), "weather_yield_m": round(weather_yield_m, 3), "runs": n,
+            "hist": [{"x": round(float((edges[k] + edges[k + 1]) / 2)), "n": int(hist[k])} for k in range(len(hist))],
+            "samples": [{"run": j + 1, "margin": round(float(v)), "price_m": round(float(pm[j]), 4), "yield_m": round(float(ym[j]), 4), "water_m": round(float(wm[j]), 4), "var_m": round(float(vm[j]), 4)} for j, v in enumerate(mg)],
+            "heatmap": heatmap,
+        },
     }

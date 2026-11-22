@@ -1,5 +1,6 @@
 import datetime as dt
 import re
+import uuid
 from functools import wraps
 
 import jwt
@@ -13,8 +14,19 @@ bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
 
 def make_token(user):
-    exp = dt.datetime.utcnow() + dt.timedelta(hours=current_app.config["JWT_HOURS"])
-    return jwt.encode({"sub": str(user.id), "exp": exp}, current_app.config["SECRET_KEY"], algorithm="HS256")
+    now = dt.datetime.now(dt.timezone.utc)
+    exp = now + dt.timedelta(hours=current_app.config["JWT_HOURS"])
+    payload = {
+        "sub": str(user.id),
+        "iat": now,
+        "exp": exp,
+        "jti": str(uuid.uuid4()),
+        "role": getattr(user, "role", "user") or "user",
+        "region": user.region,
+        "iss": "salinityshield",
+        "aud": "salinityshield-web",
+    }
+    return jwt.encode(payload, current_app.config["SECRET_KEY"], algorithm="HS256")
 
 
 def login_required(fn):
@@ -24,7 +36,13 @@ def login_required(fn):
         if not header.startswith("Bearer "):
             return jsonify(error="auth_required"), 401
         try:
-            payload = jwt.decode(header[7:], current_app.config["SECRET_KEY"], algorithms=["HS256"])
+            payload = jwt.decode(
+                header[7:],
+                current_app.config["SECRET_KEY"],
+                algorithms=["HS256"],
+                issuer="salinityshield",
+                audience="salinityshield-web",
+            )
             user = db.session.get(User, int(payload["sub"]))
         except (jwt.PyJWTError, ValueError, KeyError):
             return jsonify(error="invalid_token"), 401

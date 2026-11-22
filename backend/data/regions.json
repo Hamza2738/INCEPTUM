@@ -16,6 +16,7 @@
     "default_crop": "date_palm",
     "crops": ["date_palm", "olive", "tomato", "durum_wheat", "citrus", "potato", "pepper", "almond", "barley"],
     "defaults": {"om_pct": 1.5, "n_min_kg_ha": 30},
+    "economics_defaults": {"area_ha": 1, "water_cost_ha": 800, "fixed_cost_ha": 500, "investment_ha_annual": 4000, "investment_ha_perennial": 12000, "years_annual": 10, "years_perennial": 15, "note": "ASSUMPTION: typical order of magnitude (drip kit, planting, rent, insurance, pumping); replace with local figures"},
     "n_price_per_kg": 1.5,
     "tariff": {
       "note": "ASSUMPTION: replace with the official STEG agricultural tariff before presenting",
@@ -56,6 +57,7 @@
     "default_crop": "tea",
     "crops": ["tea", "rice", "tomato", "cabbage", "strawberry", "mandarin"],
     "defaults": {"om_pct": 3.0, "n_min_kg_ha": 40},
+    "economics_defaults": {"area_ha": 1, "water_cost_ha": 50000, "fixed_cost_ha": 400000, "investment_ha_annual": 1500000, "investment_ha_perennial": 3000000, "years_annual": 10, "years_perennial": 15, "note": "ASSUMPTION: typical order of magnitude (irrigation and greenhouse equipment, planting, land rent, insurance); replace with local figures"},
     "n_price_per_kg": 200,
     "tariff": {
       "note": "ASSUMPTION: replace with your utility's agricultural tariff before presenting",

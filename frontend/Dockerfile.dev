@@ -1,0 +1,8 @@
+# Development image for the React app (Vite dev server with hot reload). The source code is mounted from the
+# host (see docker-compose.dev.yml); node_modules stay inside the container. Rebuild after changing package.json.
+FROM node:20-alpine
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+EXPOSE 5173
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

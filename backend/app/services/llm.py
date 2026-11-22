@@ -26,9 +26,9 @@ def scan_image_gemini(region, lang, image_bytes, mime, context=None):
     import requests
 
     api_key = current_app.config["GEMINI_API_KEY"]
-    model = current_app.config.get("GEMINI_MODEL", "gemini-2.5-flash")
+    model = current_app.config.get("GEMINI_MODEL", "gemini-3-flash-preview")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-    system = (f"You analyse plant photos for farmers in {'Tunisia' if region == 'TN' else 'Japan'}. "
+    system = (f"You are an agricultural plant-image analyst for farmers in {'Tunisia' if region == 'TN' else 'Japan'}. "
               "Give possible causes only, never a definitive diagnosis. "
               f"Write all text fields in {LANG_NAMES.get(lang, 'English')}. "
               "Return at most 3 hypotheses ranked by probability, cap confidence at 0.85, "
@@ -64,7 +64,7 @@ def _gemini_generate(system, text, image_bytes=None, mime=None, max_output_token
     import requests
 
     api_key = current_app.config["GEMINI_API_KEY"]
-    model = current_app.config.get("GEMINI_MODEL", "gemini-2.5-flash")
+    model = current_app.config.get("GEMINI_MODEL", "gemini-3-flash-preview")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     parts = [{"text": text}]
     if image_bytes is not None:
@@ -114,10 +114,11 @@ def grounding(a):
 
 
 def _system(region, lang, extra=""):
-    return (f"You are an agricultural advisor for farmers in {'Tunisia' if region == 'TN' else 'Japan'}. Reply in {LANG_NAMES.get(lang, 'English')}, in short sentences with simple words. "
+    return (f"You are a practical agricultural adviser for {'Tunisia' if region == 'TN' else 'Japan'}, specialised in irrigation, soil salinity, soil health, crops, fertilizer, weather, plant stress, greenhouses, pumping, energy and local farming practices. Reply in {LANG_NAMES.get(lang, 'English')}, in short, calm and useful sentences. "
+            "Stay receptive and helpful to agricultural questions. For an unrelated question, give one brief agricultural-safe redirection instead of discussing the unrelated topic. "
             "You receive computed indicators as JSON. NEVER invent a number: quote only numbers present in the JSON, with units. "
-            "Say clearly when a value is an estimate, a model output or missing. Do not prescribe pesticide doses or products; do not promise yields. "
-            f"For high-stakes decisions refer to {RELAY[region]}. Start with the action, then the reason. {extra}")
+            "Clearly label missing, estimated, modelled or observed values. Do not prescribe pesticide products or doses. Never promise yields. Prefer cultural practices, prevention, soil testing, certified inputs and expert confirmation. "
+            f"For high-stakes decisions refer to {RELAY[region]}. Start with the recommended action, then the reason and the evidence. {extra}")
 
 
 def rewrite_advice(region, lang, a):
@@ -137,16 +138,36 @@ def rewrite_advice(region, lang, a):
 
 
 def chat(region, lang, a, question, history=None):
-    """Grounded Q and A. Returns the answer text, or None if the model is unavailable."""
+    """Grounded Q and A. Returns a model answer or a deterministic fallback."""
     if not available():
-        return None
+        return _fallback_chat(region, lang, a), False
     try:
         transcript = "\n".join(f"{h['role']}: {h['content']}" for h in (history or [])[-6:] if h.get("role") in ("user", "assistant") and h.get("content"))
         prompt = ("Indicators (JSON):\n" + json.dumps(grounding(a), ensure_ascii=False) + "\n\n" + (transcript + "\n" if transcript else "") + "user: " + question)
-        return _gemini_generate(_system(region, lang, "Answer in at most 120 words with one clear next action. If the question needs data that is not in the JSON, say what is missing and ask for it."), prompt, max_output_tokens=700, json_output=False)
+        reply = _gemini_generate(_system(region, lang, "Answer in at most 120 words with one clear next action. If the question needs data that is not in the JSON, say what is missing and ask for it."), prompt, max_output_tokens=700, json_output=False)
+        return reply, True
     except Exception as exc:
         current_app.logger.warning("chat failed: %s", exc)
-        return None
+        return _fallback_chat(region, lang, a), False
+
+
+def _fallback_chat(region, lang, a):
+    """No-model fallback built only from values already computed by the engine."""
+    g = grounding(a)
+    w = g["water"]
+    s = g["salinity"]
+    f = g["fertilizer"]
+    plot_name = g["plot"]["name"]
+    verdict = s.get("verdict")
+    ecw = s.get("ecw")
+    rain = w.get("rain_next3_mm")
+    if lang == "ar":
+        return f"افحص حالة قطعة {plot_name} أولاً: الملوحة الحالية {verdict} وEC للماء {ecw}. راجع الريّ وهطول الأمطار المتوقعة {rain} مم خلال الأيام الثلاثة المقبلة، ثم طبّق نصائح الآزوت المحسوبة ({f['dose_kg_n_ha']} كغ N/هك)."
+    if lang == "ja":
+        return f"まず{plot_name}圃場を確認してください。塩分判定は{verdict}、灌漑水ECは{ecw}です。今後3日間の降雨{rain} mmを確認し、算定済み窒素量（{f['dose_kg_n_ha']} kg N/ha）に合わせて対応してください。"
+    if lang == "fr":
+        return f"Commencez par vérifier {plot_name} : salinité {verdict}, CE de l'eau {ecw}. Consultez les {rain} mm de pluie prévus sur 3 jours puis appliquez la dose d'azote calculée ({f['dose_kg_n_ha']} kg N/ha)."
+    return f"Start by checking {plot_name}: salinity is {verdict} and water EC is {ecw}. Review the {rain} mm of rain forecast over 3 days, then apply the calculated nitrogen dose ({f['dose_kg_n_ha']} kg N/ha)."
 
 
 def _media_block(image_bytes, mime):

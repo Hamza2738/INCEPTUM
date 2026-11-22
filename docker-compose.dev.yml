@@ -1,0 +1,34 @@
+# Development: Flask API + Vite dev server, both reloading when you edit files.
+#   npm run dev          (from the project root)  or  docker compose -f docker-compose.dev.yml up --build
+#   open http://localhost:5173
+# Production (one container, built app) stays in docker-compose.yml.
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    env_file:
+      - path: backend/.env          # copy backend/.env.example to backend/.env first
+        required: false
+    environment:
+      FLASK_DEBUG: "1"              # auto-reload when Python files change
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app              # live code, data files and the SQLite database in backend/instance
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      VITE_API_TARGET: http://backend:5000   # Vite proxies /api to the backend container
+      VITE_USE_POLLING: "1"                  # file changes from Windows/macOS mounts are only seen by polling
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules                    # keep the container's Linux node_modules, not the host's
+    depends_on:
+      - backend

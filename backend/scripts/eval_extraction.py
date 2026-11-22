@@ -39,7 +39,7 @@ def close(field, got, truth):
 
 
 def main():
-    app = create_app({"SEED_DEMO": False})
+    app = create_app()
     exp_file = SAMPLES / "expected.json"
     if not exp_file.exists():
         print(f"Missing {exp_file}. See the docstring of this script for the format.")

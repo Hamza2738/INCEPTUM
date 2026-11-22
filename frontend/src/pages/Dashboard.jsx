@@ -1,25 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Droplets, Leaf, Plus, Sprout, FlaskConical, TestTube2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowRight, Droplets, Leaf, Plus, Sprout, TestTube2 } from "lucide-react";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { useI18n } from "../i18n";
-import { fmtArea, fmtN, money, num, pick, VERDICT_TONE } from "../lib/format";
+import { money, num } from "../lib/format";
 import { AdviceItem } from "../components/Advice";
-import { Button, Card, Empty, ErrorNote, Notice, Pill, Spinner, Stat } from "../components/ui";
+import { Card, Empty, ErrorNote, Notice, Spinner, Stat } from "../components/ui";
+import RegionalScene from "../components/art/RegionalScene";
 
 export default function Dashboard() {
   const { user, region } = useAuth();
   const { t, lang } = useI18n();
-  const nav = useNavigate();
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
-  const [busy, setBusy] = useState(false);
-
   const load = () => api.get("/dashboard").then(setData).catch(setError);
   useEffect(() => { load(); }, []);
-
-  const demo = async () => { setBusy(true); try { await api.post("/plots/demo"); await load(); } catch (e) { setError(e); } finally { setBusy(false); } };
 
   if (error) return <ErrorNote error={error} />;
   if (!data || !region) return <Spinner />;
@@ -34,7 +30,6 @@ export default function Dashboard() {
           <p>{t("dash.empty_d")}</p>
           <div className="row" style={{ justifyContent: "center", marginTop: 14 }}>
             <Link to="/plots?new=1" className="btn"><Plus size={16} />{t("dash.add_plot")}</Link>
-            <Button className="ghost" busy={busy} onClick={demo}><FlaskConical size={16} />{t("dash.load_demo")}</Button>
           </div>
         </Empty>
       </Card>
@@ -47,10 +42,27 @@ export default function Dashboard() {
 
   return (
     <div className="stack">
-      <div className="page-head">
-        <div><h1>{t("dash.hello", { name: user.name })}</h1><p>{t("dash.sub", { n: totals.plots })}</p></div>
-        <Link to="/plots?new=1" className="btn"><Plus size={16} />{t("dash.add_plot")}</Link>
-      </div>
+      <section className="dashboard-hero pattern-seigaiha">
+        <RegionalScene regionId={region.id} />
+        <div className="dashboard-hero-scrim" />
+        <div className="dashboard-hero-head">
+          <div><p className="hero-kicker">{t("dash.sub", { n: totals.plots })}</p><h1>{t("dash.hello", { name: user.name })}</h1></div>
+        </div>
+        <div className="dashboard-kpis">
+          <Card className="hero-kpi"><Stat label={t("dash.kpi_area")} value={num(totals.area_ha * region.area_factor, lang, 1)} unit={region.area_unit} note={`${totals.plots} ${t("dash.kpi_plots").toLowerCase()}`} /></Card>
+          {isJP ? (
+            <Card className="hero-kpi"><Stat label={t("dash.kpi_reduction")} value={reduction != null ? `−${num(Math.max(0, reduction), lang, 0)}%` : "–"} note={t("dash.kpi_reduction_note")} /></Card>
+          ) : (
+            <Card className="hero-kpi"><Stat label={t("dash.kpi_energy")} value={money(totals.annual_energy_cost, totals.currency, lang)} note={t("dash.kpi_energy_note")} /></Card>
+          )}
+          <Card className="hero-kpi"><Stat label={t("dash.kpi_n")} value={money(totals.saving_n_cost, totals.currency, lang)} note={`${num(totals.saving_n_kg, lang, 0)} kg N · ${t("dash.kpi_n_note")}`} /></Card>
+          {isJP ? (
+            <Card className="hero-kpi"><Stat label={t("dash.nitrate")} value={`${overLimit}/${items.length}`} note={`> ${limit} mg N/L`} tone={overLimit ? "risk" : "ok"} /></Card>
+          ) : (
+            <Card className="hero-kpi"><Stat label={t("dash.kpi_risk")} value={`${totals.at_risk}/${items.length}`} tone={totals.at_risk ? "risk" : "ok"} /></Card>
+          )}
+        </div>
+      </section>
 
       {synthetic && <Notice tone="warn">{t("dash.weather_synthetic")}</Notice>}
 
@@ -71,21 +83,6 @@ export default function Dashboard() {
         </Card>
       )}
 
-      <div className="grid cols-4">
-        <Card><Stat label={t("dash.kpi_area")} value={num(totals.area_ha * region.area_factor, lang, 1)} unit={region.area_unit} note={`${totals.plots} ${t("dash.kpi_plots").toLowerCase()}`} /></Card>
-        {isJP ? (
-          <Card><Stat label={t("dash.kpi_reduction")} value={reduction != null ? `−${num(Math.max(0, reduction), lang, 0)}%` : "–"} note={t("dash.kpi_reduction_note")} /></Card>
-        ) : (
-          <Card><Stat label={t("dash.kpi_energy")} value={money(totals.annual_energy_cost, totals.currency, lang)} note={t("dash.kpi_energy_note")} /></Card>
-        )}
-        <Card><Stat label={t("dash.kpi_n")} value={money(totals.saving_n_cost, totals.currency, lang)} note={`${num(totals.saving_n_kg, lang, 0)} kg N · ${t("dash.kpi_n_note")}`} /></Card>
-        {isJP ? (
-          <Card><Stat label={t("dash.nitrate")} value={`${overLimit}/${items.length}`} note={`> ${limit} mg N/L`} tone={overLimit ? "risk" : "ok"} /></Card>
-        ) : (
-          <Card><Stat label={t("dash.kpi_risk")} value={`${totals.at_risk}/${items.length}`} tone={totals.at_risk ? "risk" : "ok"} /></Card>
-        )}
-      </div>
-
       {isJP && region.policy && (
         <Card tint>
           <div className="row between wrap">
@@ -103,38 +100,11 @@ export default function Dashboard() {
         {alerts.length === 0 && <Notice tone="ok">{t("dash.all_good")}</Notice>}
         <div className="stack tight">
           {alerts.map((a, i) => (
-            <div key={i}>
-              <div className="row tiny muted" style={{ marginBottom: 3 }}><Leaf size={12} aria-hidden />{a.plot_name}</div>
-              <AdviceItem a={a} crops={region.crop_list} />
-            </div>
+            <AdviceItem key={i} a={a} crops={region.crop_list} />
           ))}
         </div>
       </Card>
 
-      <div>
-        <h2 style={{ marginBottom: 12 }}>{t("dash.plots")}</h2>
-        <div className="grid auto">
-          {items.map((i) => {
-            const tone = VERDICT_TONE[i.verdict] || "neutral";
-            const nitTone = limit && i.nitrate_mg_l != null ? (i.nitrate_mg_l > limit ? "risk" : "ok") : null;
-            return (
-              <Card key={i.plot.id}>
-                <div className="row between wrap" style={{ alignItems: "flex-start" }}>
-                  <div><h3>{i.plot.name}</h3><div className="muted small">{pick(i.crop.name, lang)} · {fmtArea(i.plot.area_ha, region, lang)}</div></div>
-                  <Pill tone={tone}>{t(`sal.short.${i.verdict}`)}</Pill>
-                </div>
-                <dl className="kv" style={{ margin: "14px 0" }}>
-                  <dt><Droplets size={13} style={{ verticalAlign: -2 }} aria-hidden /> {t("dash.water_need")}</dt><dd>{num(i.today_need_mm, lang, 1)} mm</dd>
-                  <dt>{t("dash.n_over")}</dt><dd>{i.over_pct == null ? "–" : i.over_pct > 0 ? `+${num(i.over_pct, lang, 0)}%` : `${num(i.over_pct, lang, 0)}%`}</dd>
-                  {isJP ? (<><dt>{t("dash.nitrate")}</dt><dd>{i.nitrate_mg_l == null ? "–" : <Pill tone={nitTone || "neutral"}>{num(i.nitrate_mg_l, lang, 0)} mg/L</Pill>}</dd></>)
-                    : (<><dt>{t("nrg.annual_cost")}</dt><dd>{money(i.annual_cost, region.currency, lang)}</dd></>)}
-                </dl>
-                <Link to={`/plots/${i.plot.id}`} className="btn ghost sm">{t("dash.open")} <ArrowRight size={14} className="flip" /></Link>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }

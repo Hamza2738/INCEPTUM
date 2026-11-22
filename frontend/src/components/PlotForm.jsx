@@ -99,7 +99,7 @@ export default function PlotForm({ plot, onSaved, onCancel }) {
       <div>
         <div className="field"><label>{t("plots.location")}</label><span className="hint">{t("plots.location_hint")}</span></div>
         <MapPicker lat={f.lat} lon={f.lon} center={region.map.center} zoom={region.map.zoom} onPick={(la, lo) => setF((p) => ({ ...p, lat: r2(la, 4), lon: r2(lo, 4) }))} />
-        {locationInfo && <Notice tone="ok" style={{ marginTop: 10 }}>{t("plots.location_auto")}</Notice>}
+        {locationInfo && <Notice tone="ok" style={{ marginTop: 10 }}>{`${t("plots.location_auto")}${locationInfo.reference_name ? ` — ${locationInfo.reference_name}` : ""}${locationInfo.source === "regional_reference" ? "" : ""}`}</Notice>}
         <div className="form-grid" style={{ marginTop: 10 }}>
           <Field label={t("plots.lat")}><input className="input" type="number" step="any" value={f.lat} onChange={set("lat")} required /></Field>
           <Field label={t("plots.lon")}><input className="input" type="number" step="any" value={f.lon} onChange={set("lon")} required /></Field>

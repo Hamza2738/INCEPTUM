@@ -1,0 +1,9 @@
+# Development image for the Flask API. The source code is mounted from the host (see docker-compose.dev.yml),
+# so only the dependencies are baked in. Rebuild after changing requirements.txt.
+FROM python:3.12-slim
+WORKDIR /app
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+EXPOSE 5000
+CMD ["python", "run.py"]

@@ -40,4 +40,23 @@ export const api = {
   put: (p, b) => request("PUT", p, b || {}),
   del: (p) => request("DELETE", p),
   upload: (p, form) => request("POST", p, form, true),
+  // POST a JSON body and save the returned file (e.g. an .xlsx) on the user's device.
+  download: async (p, body, fallbackName) => {
+    const headers = { "Content-Type": "application/json" };
+    const token = getToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const res = await fetch(BASE + p, { method: "POST", headers, body: JSON.stringify(body || {}) });
+    if (!res.ok) {
+      if (res.status === 401 && token) onUnauthorized();
+      const err = new Error(`http_${res.status}`);
+      err.code = `http_${res.status}`;
+      throw err;
+    }
+    const name = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") || "")?.[1] || fallbackName;
+    const url = URL.createObjectURL(await res.blob());
+    const a = document.createElement("a");
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
 };

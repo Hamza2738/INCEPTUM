@@ -5,7 +5,7 @@ from flask import Blueprint, current_app, g, jsonify, request
 from ..auth import login_required
 from ..extensions import db
 from ..models import FieldMeasurement, Plot
-from ..services import analysis, data
+from ..services import analysis, data, openmeteo
 from .plots import num, parse_date
 
 bp = Blueprint("meta", __name__, url_prefix="/api")
@@ -68,12 +68,71 @@ def dashboard():
 
 
 # ---- map -------------------------------------------------------------------------------------------
+MAP_BOUNDS = {
+    "TN": (30.2, 37.5, 7.3, 11.7, 0.35, 0.42),
+    "JP": (30.8, 45.7, 129.2, 145.9, 0.75, 1.05),
+}
+MAP_REFERENCES = {
+    "TN": [
+        {"lat": 36.806, "lon": 10.181, "water_ec": 1.2, "soil_texture": "clay_loam"},
+        {"lat": 34.740, "lon": 10.760, "water_ec": 2.4, "soil_texture": "loam"},
+        {"lat": 33.881, "lon": 10.098, "water_ec": 3.2, "soil_texture": "sandy_loam"},
+        {"lat": 33.919, "lon": 8.134, "water_ec": 4.5, "soil_texture": "sandy_loam"},
+        {"lat": 33.704, "lon": 8.969, "water_ec": 3.8, "soil_texture": "sandy_loam"},
+    ],
+    "JP": [
+        {"lat": 34.740, "lon": 138.220, "water_ec": 0.3, "soil_texture": "silt_loam", "nitrate_mg_l": 8},
+        {"lat": 32.790, "lon": 130.740, "water_ec": 0.5, "soil_texture": "loam", "nitrate_mg_l": 11},
+        {"lat": 37.900, "lon": 139.030, "water_ec": 0.2, "soil_texture": "clay_loam", "nitrate_mg_l": 6},
+    ],
+}
+
+
+def _regional_estimates(region_id):
+    south, north, west, east, lat_step, lon_step = MAP_BOUNDS[region_id]
+    reg = data.region(region_id)
+    refs = MAP_REFERENCES[region_id]
+    estimates = []
+    today = dt.date.today()
+    for lat in _range(south, north, lat_step):
+        for lon in _range(west, east, lon_step):
+            center_lat = lat + lat_step / 2
+            center_lon = lon + lon_step / 2
+            nearest = min(refs, key=lambda r: (center_lat-r["lat"])**2 + ((center_lon-r["lon"])*1.35)**2)
+            days = [openmeteo.climatology(center_lat, center_lon, today + dt.timedelta(days=d)) for d in range(-14, 1)]
+            rain = sum(max(0, float(d["rain"] or 0)) for d in days)
+            et0 = sum(max(0, float(d["et0"] or 0)) for d in days)
+            deficit = max(0, et0 - rain)
+            moisture_remaining = max(5, min(95, round(100 - deficit / 80 * 100)))
+            stress = max(0.55, min(1, round(1 - deficit / 180, 2)))
+            water_ec = nearest["water_ec"]
+            leaching = max(0, min(40, round((water_ec - 0.8) * 12, 1))) if region_id == "TN" else max(0, min(25, round((water_ec - 0.1) * 8, 1)))
+            yield_rel = max(70, min(100, round(100 - max(0, water_ec - (1.2 if region_id == "TN" else 0.4)) * 8)))
+            nitrate = nearest.get("nitrate_mg_l") if region_id == "JP" else None
+            estimates.append({
+                "lat": round(center_lat, 3), "lon": round(center_lon, 3),
+                "bounds": [[round(lat, 3), round(lon, 3)], [round(lat+lat_step, 3), round(lon+lon_step, 3)]],
+                "moisture_remaining": moisture_remaining, "ks_today": stress,
+                "yield_rel": yield_rel, "lr": round(leaching/100, 3),
+                "nitrate_mg_l": nitrate, "ghi": reg["pv"]["ghi_fallback_kwh_m2_year"],
+                "source": "Open-Meteo climate climatology + nearest regional reference", "soil_texture": nearest["soil_texture"],
+            })
+    return estimates
+
+
+def _range(start, stop, step):
+    value = start
+    while value < stop:
+        yield value
+        value += step
+
+
 @bp.get("/map/overview")
 @login_required
 def map_overview():
     plots = Plot.query.filter_by(user_id=g.user.id).all()
     meas = FieldMeasurement.query.filter_by(user_id=g.user.id).order_by(FieldMeasurement.date.desc()).limit(200).all()
-    return jsonify(plots=[analysis.compact(p, g.user) for p in plots], measurements=[m.to_dict() for m in meas])
+    return jsonify(plots=[analysis.compact(p, g.user) for p in plots], measurements=[m.to_dict() for m in meas], regional_estimates=_regional_estimates(g.user.region))
 
 
 @bp.post("/map/measurements")

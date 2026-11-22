@@ -46,7 +46,7 @@ export default function PlotDetail() {
 
   return (
     <div className="stack">
-      <div className="page-head">
+      <div className="page-head detail-page-head">
         <div>
           <Link to="/plots" className="small" style={{ display: "inline-flex", gap: 4, alignItems: "center", textDecoration: "none" }}><ArrowLeft size={14} className="flip" />{t("nav.plots")}</Link>
           <h1 style={{ marginTop: 4 }}>{p.name}</h1>

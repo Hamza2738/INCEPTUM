@@ -6,17 +6,35 @@ import pytest
 from PIL import Image
 
 from app import create_app
+from app.extensions import db
+from app.models import Plot, User
 
 
 @pytest.fixture(scope="module")
 def client(tmp_path_factory):
-    db = tmp_path_factory.mktemp("db") / "t.db"
-    app = create_app({"SQLALCHEMY_DATABASE_URI": f"sqlite:///{db}", "OFFLINE_MODE": True, "TESTING": True, "GEMINI_API_KEY": "", "SEED_DEMO": True})
+    db_path = tmp_path_factory.mktemp("db") / "t.db"
+    app = create_app({"SQLALCHEMY_DATABASE_URI": f"sqlite:///{db_path}", "OFFLINE_MODE": True, "TESTING": True, "GEMINI_API_KEY": ""})
+    with app.app_context():
+        tn = User(email="test.tn@example.com", name="Test Tunisia", region="TN", lang="fr")
+        tn.set_password("test1234")
+        jp = User(email="test.jp@example.com", name="Test Japan", region="JP", lang="ja")
+        jp.set_password("test1234")
+        db.session.add_all([tn, jp])
+        db.session.flush()
+        db.session.add_all([
+            Plot(user_id=tn.id, name="Oasis", lat=33.7, lon=9.1, area_ha=8, crop_id="date_palm", soil_texture="loam", irrigation_type="drip", water_ec=3.8),
+            Plot(user_id=tn.id, name="Greenhouse", lat=33.9, lon=8.1, area_ha=1.5, crop_id="tomato", soil_texture="loam", irrigation_type="drip", water_ec=2.8),
+            Plot(user_id=tn.id, name="Olive", lat=34.7, lon=10.7, area_ha=12, crop_id="olive", soil_texture="loam", irrigation_type="drip", water_ec=1.8),
+            Plot(user_id=jp.id, name="Tea Field", lat=35.1, lon=138.2, area_ha=10, crop_id="tea", soil_texture="loam", irrigation_type="drip", water_ec=0.8, fert_n_current=1000, greenhouse=False),
+            Plot(user_id=jp.id, name="Rice Field", lat=36.1, lon=140.1, area_ha=6, crop_id="rice", soil_texture="clay", irrigation_type="paddy", water_ec=0.6, fert_n_current=300),
+            Plot(user_id=jp.id, name="Greenhouse", lat=34.7, lon=135.5, area_ha=2, crop_id="tomato", soil_texture="loam", irrigation_type="drip", water_ec=1.2, fert_n_current=250, greenhouse=True),
+        ])
+        db.session.commit()
     return app.test_client()
 
 
 def login(client, email):
-    r = client.post("/api/auth/login", json={"email": email, "password": "demo1234"})
+    r = client.post("/api/auth/login", json={"email": email, "password": "test1234"})
     assert r.status_code == 200, r.json
     return {"Authorization": "Bearer " + r.json["token"]}
 
@@ -29,14 +47,14 @@ def test_health_and_regions(client):
 
 def test_auth_rules(client):
     assert client.get("/api/plots").status_code == 401
-    r = client.post("/api/auth/login", json={"email": "demo.tn@salinityshield.app", "password": "demo1234", "region": "JP"})
+    r = client.post("/api/auth/login", json={"email": "test.tn@example.com", "password": "test1234", "region": "JP"})
     assert r.status_code == 403 and r.json["error"] == "region_mismatch"
     assert client.post("/api/auth/register", json={"email": "bad", "password": "123456", "name": "x", "region": "TN"}).status_code == 400
     r = client.post("/api/auth/register", json={"email": "new@x.com", "password": "secret1", "name": "New", "region": "JP", "lang": "ar"})
     assert r.status_code == 201 and r.json["user"]["lang"] == "ja"       # Arabic is not offered for Japan
 
 
-@pytest.mark.parametrize("email,expected_crop", [("demo.tn@salinityshield.app", "date_palm"), ("demo.jp@salinityshield.app", "tea")])
+@pytest.mark.parametrize("email,expected_crop", [("test.tn@example.com", "date_palm"), ("test.jp@example.com", "tea")])
 def test_analysis_for_each_region(client, email, expected_crop):
     h = login(client, email)
     plots = client.get("/api/plots", headers=h).json["plots"]
@@ -54,29 +72,31 @@ def test_analysis_for_each_region(client, email, expected_crop):
 
 
 def test_japan_problem_is_nutrients_and_tunisia_problem_is_salt(client):
-    jp = login(client, "demo.jp@salinityshield.app")
+    jp = login(client, "test.jp@example.com")
     tea = client.get("/api/plots", headers=jp).json["plots"][0]
     a = client.get(f"/api/plots/{tea['id']}/analysis", headers=jp).json
     assert a["fertilizer"]["dose"]["mid"] <= 500 and a["fertilizer"]["dose"]["over_pct"] > 50
     assert a["nitrate_limit"] == 10
-    tn = login(client, "demo.tn@salinityshield.app")
+    tn = login(client, "test.tn@example.com")
     tomato = client.get("/api/plots", headers=tn).json["plots"][1]
     s = client.get(f"/api/plots/{tomato['id']}/analysis", headers=tn).json["salinity"]
     assert s["verdict"] != "OK" and s["lr"] is not None
 
 
 def test_location_suggestions(client):
-    h = login(client, "demo.tn@salinityshield.app")
+    h = login(client, "test.tn@example.com")
     r = client.post("/api/plots/location-suggestions", headers=h, json={"lat": 33.7, "lon": 9.1})
     assert r.status_code == 200
     s = r.json["suggestions"]
     assert s["forecast_available"] is True
-    assert s["irrigation_type"] == "drip"
+    assert s["irrigation_type"] == "surface"
+    assert s["soil_texture"] == "sandy_loam"
+    assert s["water_ec"] == 3.8
     assert client.post("/api/plots/location-suggestions", headers=h, json={"lat": 48.8, "lon": 2.3}).status_code == 400
 
 
 def test_crud_validation_and_ownership(client):
-    h = login(client, "demo.tn@salinityshield.app")
+    h = login(client, "test.tn@example.com")
     r = client.post("/api/plots", headers=h, json={"name": "T", "lat": 35.0, "lon": 10.0, "area_ha": 2, "crop_id": "olive", "water_ec": 2.0})
     assert r.status_code == 201
     pid = r.json["plot"]["id"]
@@ -86,7 +106,7 @@ def test_crud_validation_and_ownership(client):
     assert t.status_code == 201
     j = client.post(f"/api/plots/{pid}/journal", headers=h, json={"kind": "irrigation", "quantity": 50})
     assert j.status_code == 201
-    other = login(client, "demo.jp@salinityshield.app")
+    other = login(client, "test.jp@example.com")
     assert client.get(f"/api/plots/{pid}", headers=other).status_code == 404
     a = client.get(f"/api/plots/{pid}/analysis", headers=h).json
     assert a["latest_test"]["ec"] == 3.1
@@ -94,14 +114,14 @@ def test_crud_validation_and_ownership(client):
 
 
 def test_whatif_delay_increases_stress(client):
-    h = login(client, "demo.tn@salinityshield.app")
+    h = login(client, "test.tn@example.com")
     pid = client.get("/api/plots", headers=h).json["plots"][1]["id"]
     r = client.post(f"/api/plots/{pid}/whatif", headers=h, json={"delay_days": 5, "rain_factor": 0.0}).json
     assert r["scenario"]["water"]["eta_etc_ratio"] <= r["base"]["water"]["eta_etc_ratio"] + 1e-9
 
 
 def test_economics_and_link(client):
-    h = login(client, "demo.tn@salinityshield.app")
+    h = login(client, "test.tn@example.com")
     pid = client.get("/api/plots", headers=h).json["plots"][1]["id"]
     d = client.get("/api/economics/defaults?crop_id=tomato", headers=h).json
     assert d["defaults"]["assumption"] is True
@@ -112,18 +132,21 @@ def test_economics_and_link(client):
 
 
 def test_dashboard_and_map(client):
-    for email, key in (("demo.tn@salinityshield.app", None), ("demo.jp@salinityshield.app", "fertilizer_reduction_pct")):
+    for email, key in (("test.tn@example.com", None), ("test.jp@example.com", "fertilizer_reduction_pct")):
         h = login(client, email)
         d = client.get("/api/dashboard", headers=h).json
         assert d["totals"]["plots"] >= 3 and (key is None or key in d["totals"])
         assert isinstance(d["notifications"], list)
+        overview = client.get("/api/map/overview", headers=h).json
+        assert isinstance(overview["regional_estimates"], list)
+        assert len(overview["regional_estimates"]) > 20
         m = client.post("/api/map/measurements", headers=h, json={"lat": 33.7, "lon": 8.9, "kind": "ec", "value": 4.4})
         assert m.status_code == 201
         assert len(client.get("/api/map/overview", headers=h).json["measurements"]) >= 1
 
 
 def test_ai_fallbacks_and_scanner_quality(client):
-    h = login(client, "demo.tn@salinityshield.app")
+    h = login(client, "test.tn@example.com")
     pid = client.get("/api/plots", headers=h).json["plots"][0]["id"]
     c = client.post("/api/ai/chat", headers=h, json={"plot_id": pid, "message": "Should I irrigate?"}).json
     assert c["llm"] is False and c["advice"]
@@ -145,3 +168,12 @@ def test_ai_fallbacks_and_scanner_quality(client):
     r = client.post("/api/ai/scan", headers=h, data={"file": (png(leaf), "leaf.png")}, content_type="multipart/form-data").json
     assert r["ok"] is True and r["mode"] == "unconfigured" and r["result"] is None
     assert client.post("/api/ai/extract-lab", headers=h, data={"file": (png(leaf), "lab.png")}, content_type="multipart/form-data").json["mode"] == "unconfigured"
+
+
+def test_profitability_workbook(client):
+    h = login(client, "test.tn@example.com")
+    r = client.post("/api/economics/workbook", headers=h, json={"crop_id": "tomato", "area_ha": 2, "investment": 20000, "years": 8, "lang": "ar"})
+    assert r.status_code == 200
+    assert r.headers["Content-Type"].startswith("application/vnd.openxmlformats")
+    assert r.data[:2] == b"PK"   # xlsx is a zip archive
+    assert client.post("/api/economics/workbook", headers=h, json={"crop_id": "nope"}).status_code == 400

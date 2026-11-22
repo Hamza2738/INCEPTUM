@@ -7,7 +7,7 @@ from flask_cors import CORS
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-from .config import BASE, Config  # noqa: E402
+from config import BASE, Config  # noqa: E402
 from .extensions import db  # noqa: E402
 
 
@@ -40,9 +40,12 @@ def create_app(overrides=None):
 
     with app.app_context():
         db.create_all()
-        if app.config["SEED_DEMO"]:
-            from .seed import seed_demo
-            seed_demo()
+        # SQLite does not add newly declared columns to existing databases.
+        from sqlalchemy import inspect, text
+        columns = {column["name"] for column in inspect(db.engine).get_columns("user")}
+        if "role" not in columns:
+            db.session.execute(text("ALTER TABLE user ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'user'"))
+            db.session.commit()
 
     # Single-process deployment: serve the built React app if frontend/dist exists.
     dist = Path(os.getenv("FRONTEND_DIST", BASE.parent / "frontend" / "dist"))

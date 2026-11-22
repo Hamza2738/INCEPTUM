@@ -25,8 +25,8 @@ export default function ScheduleSection({ a }) {
           <>
             <div className="grid cols-4">
               <Stat label={t("opt.saving")} value={`${num(m.saving_pct, lang, 0)}%`} tone={m.saving_pct > 0 ? "ok" : undefined} note={t("opt.cost")} />
-              <Stat label={`${t("opt.baseline")}`} value={money(m.baseline.cost, cur, lang)} note={`${num(m.baseline.kwh_grid, lang, 0)} kWh · ${num(m.baseline.peak_kw, lang, 1)} kW`} />
-              <Stat label={`${t("opt.optimized")}`} value={money(m.optimized.cost, cur, lang)} note={`${num(m.optimized.kwh_grid, lang, 0)} kWh · ${num(m.optimized.peak_kw, lang, 1)} kW`} />
+              <Stat label={`${t("opt.baseline")}`} value={money(m.baseline.cost, cur, lang)} note={`${num(m.baseline.co2_kg, lang, 0)} kg CO₂ · ${num(m.baseline.peak_kw, lang, 1)} kW`} />
+              <Stat label={`${t("opt.optimized")}`} value={money(m.optimized.cost, cur, lang)} note={`${num(m.optimized.co2_kg, lang, 0)} kg CO₂ · ${num(m.optimized.peak_kw, lang, 1)} kW`} />
               <Stat label={t("opt.peak")} value={`${num(m.optimized.peak_kw, lang, 1)} kW`} note={`${t("opt.baseline")}: ${num(m.baseline.peak_kw, lang, 1)} kW`} />
             </div>
             <div style={{ marginTop: 16 }}>

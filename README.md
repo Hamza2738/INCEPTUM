@@ -51,9 +51,24 @@ Open http://localhost:5173. On the login screen pick a side, then press the demo
 |---|---|
 | `demo.tn@salinityshield.app` | `demo1234` |
 | `demo.jp@salinityshield.app` | `demo1234` |
+| `admin@salinityshield.app` | `admin` |
 
 An account belongs to one country. Logging into the other side shows a "this account belongs to the other
 country" message instead of silently switching.
+
+### Development with Docker (backend + frontend, with reload)
+
+Needs Docker Desktop. From the project root:
+
+```bash
+cp backend/.env.example backend/.env    # once, then edit it
+npm run dev                             # = docker compose -f docker-compose.dev.yml up --build
+```
+
+Open http://localhost:5173. The Flask API runs on port 5000 and restarts when a Python file changes; Vite reloads
+the page when a frontend file changes. The SQLite database stays in `backend/instance/`, the same one used without
+Docker. Stop with Ctrl+C (or `npm run dev:down`). Rebuild is automatic with `npm run dev`; it only matters after
+changing `requirements.txt` or `package.json`.
 
 ### One-process production build
 
@@ -81,7 +96,7 @@ cd frontend && npm run check:i18n             # every key used exists in en; fr/
 |---|---|
 | `SECRET_KEY` | JWT signing key. Set a long random value in production. |
 | `GEMINI_API_KEY` | Needed for: advisor chat and rewriting, plant scanner, and lab-report extraction. Without it, rule-based advisor advice still works and Gemini-powered features display a clear unconfigured or demo state. |
-| `GEMINI_MODEL` | Gemini model used for text and image analysis. Default `gemini-2.5-flash`. |
+| `GEMINI_MODEL` | Gemini model used for text and image analysis. Default `gemini-3-flash-preview`. |
 | `OFFLINE_MODE` | `1` = never call Open-Meteo; use `data/weather_cache` or a synthetic climatology, labelled as such in the UI. Use this for a demo with unreliable wifi. |
 | `SCANNER_DEMO` | `1` = without an API key, the scanner returns a fixed example result with a visible "DEMO RESULT" banner. Never presented as an analysis of the photo. |
 | `SEED_DEMO` | `1` creates the two demo accounts and their plots. Set `0` in production. |

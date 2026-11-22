@@ -16,6 +16,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(300), nullable=False)
     region = db.Column(db.String(2), nullable=False)       # TN or JP
     lang = db.Column(db.String(5), nullable=False, default="en")
+    role = db.Column(db.String(20), nullable=False, default="user")
     created_at = db.Column(db.DateTime, default=dt.datetime.utcnow)
 
     def set_password(self, pw):
@@ -25,7 +26,7 @@ class User(db.Model):
         return check_password_hash(self.password_hash, pw)
 
     def to_dict(self):
-        return {"id": self.id, "email": self.email, "name": self.name, "region": self.region, "lang": self.lang}
+        return {"id": self.id, "email": self.email, "name": self.name, "region": self.region, "lang": self.lang, "role": self.role, "is_admin": self.role == "admin"}
 
 
 class Plot(db.Model):

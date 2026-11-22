@@ -37,7 +37,7 @@ export default function SalinitySection({ a }) {
           {f.blend_fraction > 0 ? (
             <>
               <p>{t("sal.blend_d", { pct: num(f.blend_fraction * 100, lang, 0), target: num(f.ecw_effective, lang, 1) })}</p>
-              <KV rows={[[t("nrg.treated"), `${num(e.treated_fraction * 100, lang, 0)}%`], [t("nrg.treat"), `${num(e.treat_kwh_m3, lang, 2)} kWh/m³`], [t("nrg.leach_extra"), `+${num(e.leaching_extra_pct, lang, 0)}%`]]} />
+              <KV rows={[[t("nrg.treated"), `${num(e.treated_fraction * 100, lang, 0)}%`], [t("nrg.treat"), `${num(e.treat_co2_kg_m3, lang, 2)} ${t("nrg.unit")}`], [t("nrg.leach_extra"), `+${num(e.leaching_extra_pct, lang, 0)}%`]]} />
               {e.brine_m3 > 0 && <Notice tone="warn"><div><b>{t("sal.brine")}:</b> {num(e.brine_m3, lang, 0)} m³/{t("per_year")}. {t("sal.brine_d")}</div></Notice>}
             </>
           ) : <p className="muted">{t("sal.no_blend")}</p>}

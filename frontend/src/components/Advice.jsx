@@ -1,8 +1,9 @@
 import React from "react";
-import { AlertTriangle, Bot, CheckCircle2, CloudRain, Droplets, Flame, Leaf, Sun, Snowflake, Sprout, TestTube2, Waves, Zap } from "lucide-react";
+import { AlertTriangle, Bot, CheckCircle2, CloudRain, Droplets, Flame, Info, Leaf, Sun, Snowflake, Sprout, TestTube2, Waves, Zap } from "lucide-react";
 import { useI18n } from "../i18n";
 import { useAuth } from "../auth";
 import { dateShort, fmtN, num, pick } from "../lib/format";
+import { CropGlyph } from "./art/CropGlyph";
 
 const ICONS = {
   frost_risk: Snowflake, heat_risk: Flame, irrigate_today: Droplets, irrigate_soon: Droplets, rain_skip: CloudRain, salinity_not_suitable: Waves, salinity_risky: Waves,
@@ -33,14 +34,16 @@ export function AdviceItem({ a, crops }) {
   const { t } = useI18n();
   const text = useAdviceText();
   const Icon = ICONS[a.code] || AlertTriangle;
+  const UrgencyIcon = a.urgency === "high" ? AlertTriangle : a.urgency === "medium" ? Bot : CheckCircle2;
   return (
     <div className={`advice ${a.urgency || "low"}`}>
-      <div className="ico"><Icon size={18} aria-hidden /></div>
+      <div className="ico"><Icon size={20} aria-hidden /></div>
       <div className="grow">
-        <div>{text(a, crops)}</div>
+        {a.plot_name && <div className="advice-plot"><span className="advice-crop"><CropGlyph cropId={a.crop_id} size={18} /></span><span>{a.plot_name}</span></div>}
+        <div className="advice-sentence">{text(a, crops)}</div>
         <div className="tags">
-          <span className={`pill ${a.urgency === "high" ? "risk" : a.urgency === "medium" ? "warn" : "info"}`}>{t(`advice.urgency.${a.urgency || "low"}`)}</span>
-          {a.confidence && <span className="pill neutral" style={{ fontWeight: 500 }}>{t(`advice.confidence.${a.confidence}`)}</span>}
+          <span className={`pill ${a.urgency === "high" ? "risk" : a.urgency === "medium" ? "warn" : "info"}`}><UrgencyIcon size={14} aria-hidden />{t(`advice.urgency.${a.urgency || "low"}`)}</span>
+          {a.confidence && <span className="pill neutral"><Info size={14} aria-hidden />{t(`advice.confidence.${a.confidence}`)}</span>}
           {a.text && <span className="badge-model"><Bot size={11} aria-hidden />AI</span>}
         </div>
       </div>
